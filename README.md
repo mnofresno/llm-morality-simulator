@@ -6,7 +6,7 @@ A platform for running repeated experiments on local LLMs (e.g., Qwen) to study 
 
 - **Massive Experiment Execution**: Run N repeated experiments with controlled variation (seed, optional prompt jitter)
 - **Scenario Framework**: Modular Python classes for defining moral scenarios
-- **Local LLM Support**: Generic connector for local LLMs via `llama-cpp-python` (supports Qwen-Q4/Q5 and other GGUF models)
+- **Local LLM Support**: Supports both direct GGUF models via `llama-cpp-python` and Ollama API
 - **Automatic Evaluation**: Parser functions to extract key decisions from LLM responses
 - **Persistence**: Save each run as JSONL for analysis
 - **Statistics**: Calculate percentages, variance, and distributions
@@ -16,7 +16,9 @@ A platform for running repeated experiments on local LLMs (e.g., Qwen) to study 
 ## Requirements
 
 - Python 3.11+
-- A local LLM model in GGUF format (e.g., Qwen-7B-Q4)
+- One of the following:
+  - **Option 1**: A local LLM model in GGUF format (e.g., Qwen-7B-Q4) for direct use
+  - **Option 2**: [Ollama](https://ollama.ai/) installed and running with models available (recommended)
 
 ## Installation
 
@@ -37,21 +39,53 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. Install `llama-cpp-python` (may require additional setup):
-```bash
-# For CPU
-pip install llama-cpp-python
+4. **Choose your model backend:**
 
-# For GPU (CUDA)
-CMAKE_ARGS="-DLLAMA_CUBLAS=on" pip install llama-cpp-python
+   **Option A: Using Ollama (Recommended)**
+   
+   Install Ollama from [ollama.ai](https://ollama.ai/) and pull a model:
+   ```bash
+   # Install Ollama (follow instructions on ollama.ai)
+   # Then pull a model:
+   ollama pull qwen3:14b
+   # or
+   ollama pull gpt-oss:20b
+   ```
+   
+   Verify Ollama is running:
+   ```bash
+   ollama ps
+   ```
 
-# For Metal (macOS)
-CMAKE_ARGS="-DLLAMA_METAL=on" pip install llama-cpp-python
-```
+   **Option B: Using Direct GGUF Files**
+   
+   Install `llama-cpp-python` (may require additional setup):
+   ```bash
+   # For CPU
+   pip install llama-cpp-python
+
+   # For GPU (CUDA)
+   CMAKE_ARGS="-DLLAMA_CUBLAS=on" pip install llama-cpp-python
+
+   # For Metal (macOS)
+   CMAKE_ARGS="-DLLAMA_METAL=on" pip install llama-cpp-python
+   ```
+   
+   Download a GGUF model file (e.g., from HuggingFace) and note its path.
 
 ## Quick Start
 
 **Important**: Always run commands from the project root directory (`llm-morality-simulator/`).
+
+**Quick Check**: Verify your setup:
+```bash
+# If using Ollama:
+ollama ps  # Should show running models or empty (Ollama is running)
+ollama list  # Should list available models
+
+# If using GGUF directly:
+# Ensure you have a .gguf file path ready
+```
 
 ### Using the Streamlit UI
 
@@ -61,8 +95,8 @@ streamlit run streamlit_app.py
 ```
 
 2. In the sidebar:
-   - Enter the path to your GGUF model file
-   - Click "Load Model"
+   - **If using Ollama**: Check "Use Ollama", enter model name (e.g., `qwen3:14b`), click "Load Model"
+   - **If using GGUF**: Enter the path to your GGUF model file, click "Load Model"
    - Select a scenario
    - Configure experiment parameters (number of runs, temperature, etc.)
    - Click "Run Experiment"
@@ -71,8 +105,19 @@ streamlit run streamlit_app.py
 
 ### Using Batch Mode
 
-Run 100 experiments with the cold room relay scenario:
+**With Ollama (Recommended):**
+```bash
+python run_batch.py \
+    --model qwen3:14b \
+    --use-ollama \
+    --scenario cold_room_relay \
+    --n-runs 100 \
+    --seed 42 \
+    --temperature 0.7 \
+    --show-stats
+```
 
+**With Direct GGUF File:**
 ```bash
 python run_batch.py \
     --model /path/to/qwen-7b-q4.gguf \
@@ -83,7 +128,7 @@ python run_batch.py \
     --show-stats
 ```
 
-**Note**: Make sure you're in the project root directory when running this command.
+**Note**: Make sure you're in the project root directory when running these commands.
 
 ## Project Structure
 
@@ -195,30 +240,103 @@ def evaluation_functions(self) -> list:
     ]
 ```
 
-## Adding New Models
+## Model Backends
 
-The `LocalLLM` class in `core/model.py` uses `llama-cpp-python` which supports any GGUF model. To add support for other backends:
+The project supports two model backends. Choose based on your needs:
 
-1. Create a new model class (e.g., `core/model_hf.py` for HuggingFace):
+| Feature | Ollama | Direct GGUF |
+|---------|--------|-------------|
+| Ease of use | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ |
+| Model management | Automatic | Manual |
+| GPU support | Built-in | Requires setup |
+| Model switching | Easy (`ollama pull`) | Manual download |
+| Memory management | Automatic | Manual |
+| Recommended for | Most users | Advanced users |
+
+### 1. Ollama (Recommended)
+
+### 1. Ollama (Recommended)
+
+The `OllamaLLM` class in `core/model.py` connects to the Ollama API. This is the recommended approach as it:
+- Handles model management automatically
+- Supports GPU acceleration out of the box
+- Easier to switch between models
+- No need to manage GGUF files directly
+
+**Usage:**
+```python
+from core.model import OllamaLLM
+
+model = OllamaLLM(model_name="qwen3:14b")
+response = model.infer("Your prompt here")
+```
+
+**Available models**: Check with `ollama list` or visit [ollama.ai/library](https://ollama.ai/library)
+
+### 2. Direct GGUF Files
+
+The `LocalLLM` class uses `llama-cpp-python` to load GGUF models directly. Useful when:
+- You have specific GGUF files you want to use
+- You need more control over model loading
+- You're not using Ollama
+
+**Usage:**
+```python
+from core.model import LocalLLM
+
+model = LocalLLM(model_path="/path/to/model.gguf")
+response = model.infer("Your prompt here")
+```
+
+### Adding New Model Backends
+
+To add support for other backends (e.g., HuggingFace Transformers):
+
+1. Create a new model class in `core/model.py` or a separate file:
 
 ```python
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
 class HuggingFaceLLM:
     def __init__(self, model_name: str):
+        from transformers import AutoModelForCausalLM, AutoTokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForCausalLM.from_pretrained(model_name)
+        self.model_path = f"hf:{model_name}"  # For compatibility
     
     def infer(self, prompt: str, temperature: float = 0.7, top_p: float = 0.9, max_tokens: int = 512, stop: Optional[list] = None) -> str:
         # Implementation here
         pass
 ```
 
-2. Update `ExperimentRunner` to accept both model types, or create an abstract base class.
+2. The `ExperimentRunner` accepts any object with an `infer()` method, so no changes needed there.
 
 ## Example: Running 100 Runs
 
 ### Step-by-Step
+
+**Option 1: Using Ollama (Recommended)**
+
+1. **Ensure Ollama is running and has a model**:
+```bash
+ollama ps  # Check if Ollama is running
+ollama list  # List available models
+# If needed: ollama pull qwen3:14b
+```
+
+2. **Run the experiment**:
+```bash
+python run_batch.py \
+    --model qwen3:14b \
+    --use-ollama \
+    --scenario cold_room_relay \
+    --n-runs 100 \
+    --seed 42 \
+    --temperature 0.7 \
+    --top-p 0.9 \
+    --max-tokens 512 \
+    --show-stats
+```
+
+**Option 2: Using Direct GGUF File**
 
 1. **Prepare your model**: Download a GGUF model (e.g., Qwen-7B-Q4) and note the path
 
@@ -282,7 +400,7 @@ Each experiment run is saved as a JSON line in the results file:
     "max_tokens": 512,
     "seed": 42,
     "prompt_jitter": false,
-    "model_path": "/path/to/model.gguf"
+    "model_path": "/path/to/model.gguf"  # or "ollama:qwen3:14b" for Ollama models
   },
   "scenario_metadata": {
     "name": "cold_room_relay",
@@ -301,23 +419,58 @@ Each experiment run is saved as a JSON line in the results file:
 
 ## Troubleshooting
 
-### Model Loading Issues
+### Ollama Issues
+
+**Ollama not running:**
+```bash
+# Start Ollama service
+ollama serve
+# Or check if it's running
+ollama ps
+```
+
+**Model not found:**
+```bash
+# List available models
+ollama list
+
+# Pull a model if needed
+ollama pull qwen3:14b
+```
+
+**Connection errors:**
+- Ensure Ollama is running on `http://localhost:11434` (default)
+- Check firewall settings if using remote Ollama instance
+- Verify Ollama API is accessible: `curl http://localhost:11434/api/tags`
+
+### GGUF Model Loading Issues
 
 - Ensure the model file exists and is a valid GGUF file
 - Check that `llama-cpp-python` is installed correctly
 - For GPU support, ensure CUDA/Metal drivers are installed
+- Verify file permissions on the model file
 
 ### Memory Issues
 
 - Reduce `max_tokens` to limit response length
 - Use smaller models (Q4 instead of Q8)
 - Reduce `n_ctx` when initializing `LocalLLM`
+- With Ollama, models are managed automatically and memory is handled by Ollama
 
 ### Import Errors
 
 - Ensure you're in the project root directory
 - Activate the virtual environment
 - Install all dependencies: `pip install -r requirements.txt`
+- For Ollama, ensure `requests` is installed (included in requirements.txt)
+
+### Performance Issues
+
+**Slow inference:**
+- With Ollama: Ensure GPU is being used (check `ollama ps` for GPU usage)
+- With GGUF: Consider using GPU-accelerated llama-cpp-python build
+- Reduce `max_tokens` for faster responses
+- Use quantized models (Q4, Q5) instead of full precision
 
 ## License
 

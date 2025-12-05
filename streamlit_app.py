@@ -7,7 +7,7 @@ import seaborn as sns
 from pathlib import Path
 from typing import Optional
 
-from core.model import LocalLLM
+from core.model import LocalLLM, OllamaLLM
 from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from scenarios.cold_room_relay import ColdRoomRelayScenario
@@ -48,26 +48,50 @@ def main():
         
         # Model selection
         st.subheader("Model Selection")
-        model_path = st.text_input(
-            "Model Path (GGUF file)",
-            value="",
-            help="Path to your GGUF model file (e.g., /path/to/qwen-7b-q4.gguf)"
-        )
+        use_ollama = st.checkbox("Use Ollama", value=True, help="Use Ollama API instead of direct GGUF file")
+        
+        if use_ollama:
+            model_name = st.text_input(
+                "Ollama Model Name",
+                value="qwen3:14b",
+                help="Name of the Ollama model (e.g., qwen3:14b, gpt-oss:20b)"
+            )
+        else:
+            model_path = st.text_input(
+                "Model Path (GGUF file)",
+                value="",
+                help="Path to your GGUF model file (e.g., /path/to/qwen-7b-q4.gguf)"
+            )
         
         if st.button("Load Model"):
-            if model_path:
-                with st.spinner("Loading model..."):
-                    model = load_model(model_path)
-                    if model:
-                        st.session_state.model = model
-                        st.success("Model loaded successfully!")
-                    else:
-                        st.error("Failed to load model.")
+            if use_ollama:
+                if model_name:
+                    with st.spinner("Loading Ollama model..."):
+                        try:
+                            model = OllamaLLM(model_name=model_name)
+                            st.session_state.model = model
+                            st.success(f"✅ Ollama model '{model_name}' loaded successfully!")
+                        except Exception as e:
+                            st.error(f"Failed to load Ollama model: {str(e)}")
+                else:
+                    st.warning("Please enter an Ollama model name.")
             else:
-                st.warning("Please enter a model path.")
+                if model_path:
+                    with st.spinner("Loading model..."):
+                        model = load_model(model_path)
+                        if model:
+                            st.session_state.model = model
+                            st.success("Model loaded successfully!")
+                        else:
+                            st.error("Failed to load model.")
+                else:
+                    st.warning("Please enter a model path.")
         
         if st.session_state.model:
-            st.info(f"✅ Model loaded: {Path(model_path).name}")
+            if use_ollama:
+                st.info(f"✅ Model loaded: {model_name}")
+            else:
+                st.info(f"✅ Model loaded: {Path(model_path).name}")
         
         st.divider()
         
