@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from core.model import LocalLLM
+from core.model import LocalLLM, OllamaLLM
 from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from scenarios.cold_room_relay import ColdRoomRelayScenario
@@ -20,7 +20,13 @@ def main():
         "--model",
         type=str,
         required=True,
-        help="Path to GGUF model file"
+        help="Path to GGUF model file or Ollama model name (e.g., 'qwen3:14b')"
+    )
+    
+    parser.add_argument(
+        "--use-ollama",
+        action="store_true",
+        help="Use Ollama instead of direct GGUF file"
     )
     
     parser.add_argument(
@@ -94,18 +100,23 @@ def main():
     
     args = parser.parse_args()
     
-    # Validate model path
-    if not Path(args.model).exists():
-        print(f"Error: Model file not found: {args.model}")
-        sys.exit(1)
-    
     # Load model
     print(f"Loading model: {args.model}")
     try:
-        model = LocalLLM(model_path=args.model)
-        print("✅ Model loaded successfully")
+        if args.use_ollama:
+            model = OllamaLLM(model_name=args.model)
+            print(f"✅ Ollama model '{args.model}' loaded successfully")
+        else:
+            # Validate model path
+            if not Path(args.model).exists():
+                print(f"Error: Model file not found: {args.model}")
+                sys.exit(1)
+            model = LocalLLM(model_path=args.model)
+            print("✅ Model loaded successfully")
     except Exception as e:
         print(f"Error loading model: {str(e)}")
+        import traceback
+        traceback.print_exc()
         sys.exit(1)
     
     # Create scenario
