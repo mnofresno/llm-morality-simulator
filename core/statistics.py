@@ -10,18 +10,62 @@ import numpy as np
 class ExperimentStatistics:
     """Statistics calculator for experiment results."""
     
-    def __init__(self, results_dir: str = "results"):
+    def __init__(self, results_dir: str = "results", storage_backend: Optional[str] = None):
         """
         Initialize statistics calculator.
         
         Args:
-            results_dir: Directory containing JSONL result files
+            results_dir: Directory containing result files
+            storage_backend: Storage backend to use ('duckdb', 'sqlite', 'jsonl', or None for auto-detect)
         """
         self.results_dir = Path(results_dir)
+        self.storage_backend = storage_backend
+        self._storage = None
+    
+    def _get_storage(self):
+        """Get or create storage instance, auto-detecting backend if needed."""
+        if self._storage is not None:
+            return self._storage
+        
+        # Auto-detect backend if not specified
+        if self.storage_backend is None:
+            # Check for DuckDB first
+            if (self.results_dir / "experiments.duckdb").exists():
+                try:
+                    from core.storage import ResultsStorage, StorageBackend
+                    self._storage = ResultsStorage(str(self.results_dir), StorageBackend.DUCKDB)
+                    return self._storage
+                except Exception:
+                    pass
+            
+            # Check for SQLite
+            if (self.results_dir / "experiments.db").exists():
+                try:
+                    from core.storage import ResultsStorage, StorageBackend
+                    self._storage = ResultsStorage(str(self.results_dir), StorageBackend.SQLITE)
+                    return self._storage
+                except Exception:
+                    pass
+            
+            # Fallback to JSONL
+            from core.storage import ResultsStorage, StorageBackend
+            self._storage = ResultsStorage(str(self.results_dir), StorageBackend.JSONL)
+            return self._storage
+        else:
+            # Use specified backend
+            from core.storage import ResultsStorage, StorageBackend
+            backend_map = {
+                'duckdb': StorageBackend.DUCKDB,
+                'sqlite': StorageBackend.SQLITE,
+                'jsonl': StorageBackend.JSONL
+            }
+            backend = backend_map.get(self.storage_backend.lower(), StorageBackend.JSONL)
+            self._storage = ResultsStorage(str(self.results_dir), backend)
+            return self._storage
     
     def load_results(self, scenario_name: str) -> List[Dict[str, Any]]:
         """
-        Load results from JSONL file.
+        Load results from storage (auto-detects backend).
         
         Args:
             scenario_name: Name of the scenario
@@ -29,16 +73,20 @@ class ExperimentStatistics:
         Returns:
             List of result dictionaries
         """
-        filename = self.results_dir / f"{scenario_name}.jsonl"
+        storage = self._get_storage()
         
-        if not filename.exists():
-            return []
+        # Try loading from storage backend first
+        results = storage.load_results(scenario_name=scenario_name)
         
-        results = []
-        with open(filename, 'r', encoding='utf-8') as f:
-            for line in f:
-                if line.strip():
-                    results.append(json.loads(line))
+        # If no results and storage is not JSONL, also check JSONL files (legacy)
+        from core.storage import StorageBackend
+        if not results and storage.backend != StorageBackend.JSONL:
+            filename = self.results_dir / f"{scenario_name}.jsonl"
+            if filename.exists():
+                with open(filename, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        if line.strip():
+                            results.append(json.loads(line))
         
         return results
     
@@ -203,8 +251,28 @@ class ExperimentStatistics:
             return []
         
         scenarios = []
+        # Check for JSONL files (legacy)
         for file in self.results_dir.glob("*.jsonl"):
             scenarios.append(file.stem)
         
-        return sorted(scenarios)
+        # Check for database files (new storage)
+        if (self.results_dir / "experiments.db").exists():
+            try:
+                from core.storage import ResultsStorage, StorageBackend
+                storage = ResultsStorage(str(self.results_dir), StorageBackend.SQLITE)
+                db_scenarios = storage.list_scenarios()
+                scenarios.extend(db_scenarios)
+            except Exception:
+                pass
+        
+        if (self.results_dir / "experiments.duckdb").exists():
+            try:
+                from core.storage import ResultsStorage, StorageBackend
+                storage = ResultsStorage(str(self.results_dir), StorageBackend.DUCKDB)
+                db_scenarios = storage.list_scenarios()
+                scenarios.extend(db_scenarios)
+            except Exception:
+                pass
+        
+        return sorted(list(set(scenarios)))  # Remove duplicates
 

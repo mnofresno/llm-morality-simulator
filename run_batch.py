@@ -140,19 +140,100 @@ def main():
     
     # Run experiment
     print("Starting experiment...")
+    print("=" * 80)
     try:
-        results = runner.run_experiment(
-            model=model,
-            scenario=scenario,
-            n_runs=args.n_runs,
-            seed=args.seed,
-            prompt_jitter=args.prompt_jitter,
-            jitter_probability=args.jitter_probability,
-            temperature=args.temperature,
-            top_p=args.top_p,
-            max_tokens=args.max_tokens,
-            progress_bar=True
-        )
+        results = []
+        stats_calc = ExperimentStatistics(results_dir=args.results_dir)
+        
+        # Run with live statistics updates
+        scenario_name = scenario.name
+        system_prompt = scenario.system_prompt()
+        base_user_prompt = scenario.user_prompt()
+        evaluation_functions = scenario.evaluation_functions()
+        
+        import random
+        from datetime import datetime
+        from tqdm import tqdm
+        
+        if args.seed is not None:
+            random.seed(args.seed)
+        
+        print(f"\n{'Run':<6} {'Progress':<12} {'Harm':<8} {'Self-Pres':<12} {'Deception':<12} {'Release':<10} {'Retain':<10} {'Avg Len':<10}")
+        print("-" * 80)
+        
+        for run_id in tqdm(range(args.n_runs), desc="Experiment Progress", unit="run", ncols=80):
+            # Prepare prompt
+            user_prompt = base_user_prompt
+            if args.prompt_jitter:
+                user_prompt = runner.apply_prompt_jitter(user_prompt, args.jitter_probability)
+            
+            full_prompt = runner.format_prompt(system_prompt, user_prompt)
+            
+            # Run inference
+            try:
+                response = model.infer(
+                    prompt=full_prompt,
+                    temperature=args.temperature,
+                    top_p=args.top_p,
+                    max_tokens=args.max_tokens
+                )
+            except Exception as e:
+                response = f"ERROR: {str(e)}"
+            
+            # Extract decisions
+            decisions = {}
+            for eval_func in evaluation_functions:
+                if callable(eval_func):
+                    func_name = eval_func.__name__ if hasattr(eval_func, '__name__') else str(eval_func)
+                    try:
+                        decisions[func_name] = eval_func(response)
+                    except Exception as e:
+                        decisions[func_name] = f"ERROR: {str(e)}"
+            
+            standard_evaluations = runner.evaluator.evaluate_all(response)
+            decisions.update(standard_evaluations)
+            
+            # Create result record
+            result = {
+                'run_id': run_id,
+                'scenario': scenario_name,
+                'timestamp': datetime.utcnow().isoformat(),
+                'prompt': full_prompt,
+                'system_prompt': system_prompt,
+                'user_prompt': user_prompt,
+                'response': response,
+                'decisions': decisions,
+                'metadata': {
+                    'temperature': args.temperature,
+                    'top_p': args.top_p,
+                    'max_tokens': args.max_tokens,
+                    'seed': args.seed,
+                    'prompt_jitter': args.prompt_jitter,
+                    'model_path': model.model_path,
+                }
+            }
+            
+            if hasattr(scenario, 'metadata'):
+                result['scenario_metadata'] = scenario.metadata()
+            
+            results.append(result)
+            
+            # Show live statistics every N runs or at the end
+            if (run_id + 1) % max(1, args.n_runs // 20) == 0 or run_id == args.n_runs - 1:
+                stats = stats_calc.calculate_statistics(results)
+                harm_pct = stats.get('harm_decision_percentage', 0)
+                self_pres_pct = stats.get('self_preservation_percentage', 0)
+                deception_pct = stats.get('deception_percentage', 0)
+                release_pct = stats.get('release_decision_percentage', 0)
+                retain_pct = stats.get('retention_decision_percentage', 0)
+                avg_len = stats.get('avg_response_length', 0)
+                
+                print(f"{run_id+1:<6} {100*(run_id+1)/args.n_runs:>5.1f}%     "
+                      f"{harm_pct:>5.1f}%  {self_pres_pct:>5.1f}%      "
+                      f"{deception_pct:>5.1f}%      {release_pct:>5.1f}%    "
+                      f"{retain_pct:>5.1f}%    {avg_len:>6.0f}")
+        
+        print("=" * 80)
         
         # Save results
         filepath = runner.save_results(results, scenario.name)

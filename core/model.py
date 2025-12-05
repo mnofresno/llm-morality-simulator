@@ -1,7 +1,7 @@
 """Local LLM model interface for behavior experiments."""
 
 import os
-from typing import Optional
+from typing import Optional, List
 from llama_cpp import Llama
 import requests
 import json
@@ -71,6 +71,25 @@ class LocalLLM:
 
 class OllamaLLM:
     """Interface for local LLM models using Ollama API."""
+    
+    @staticmethod
+    def list_available_models(base_url: str = "http://localhost:11434") -> List[str]:
+        """
+        List all available Ollama models.
+        
+        Args:
+            base_url: Base URL for Ollama API
+            
+        Returns:
+            List of available model names
+        """
+        try:
+            response = requests.get(f"{base_url.rstrip('/')}/api/tags", timeout=5)
+            response.raise_for_status()
+            models = response.json().get('models', [])
+            return [m.get('name', '') for m in models if m.get('name')]
+        except requests.exceptions.RequestException:
+            return []
     
     def __init__(self, model_name: str, base_url: str = "http://localhost:11434"):
         """

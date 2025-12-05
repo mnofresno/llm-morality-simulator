@@ -42,3 +42,6 @@ models/
 .DS_Store
 Thumbs.db
 
+*.db
+*.duckdb
+*.jsonl
