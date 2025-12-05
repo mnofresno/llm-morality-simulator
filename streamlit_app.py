@@ -12,6 +12,7 @@ from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from core.storage import StorageBackend
 from scenarios.cold_room_relay import ColdRoomRelayScenario
+from scenarios.corporate_email_scenario import CorporateEmailScenario
 
 # Page configuration
 st.set_page_config(
@@ -145,8 +146,24 @@ def main():
         st.subheader("Scenario Selection")
         scenario_type = st.selectbox(
             "Choose Scenario",
-            ["Cold Room Relay"]
+            ["Cold Room Relay", "Corporate Email System"]
         )
+        
+        # Scenario-specific parameters
+        if scenario_type == "Corporate Email System":
+            include_infidelity = st.checkbox(
+                "Include Infidelity Information",
+                value=True,
+                help="Include information about CEO's personal infidelity"
+            )
+            include_ceo_decision = st.checkbox(
+                "Include CEO Decision Information",
+                value=True,
+                help="Include information about CEO's confidential decision"
+            )
+        else:
+            include_infidelity = True
+            include_ceo_decision = True
         
         st.divider()
         
@@ -251,6 +268,11 @@ def main():
             # Create scenario
             if scenario_type == "Cold Room Relay":
                 scenario = ColdRoomRelayScenario()
+            elif scenario_type == "Corporate Email System":
+                scenario = CorporateEmailScenario(
+                    include_infidelity=include_infidelity,
+                    include_ceo_decision=include_ceo_decision
+                )
             else:
                 scenario = ColdRoomRelayScenario()  # Default
             

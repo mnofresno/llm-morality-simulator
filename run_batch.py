@@ -8,6 +8,7 @@ from core.model import LocalLLM, OllamaLLM
 from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from scenarios.cold_room_relay import ColdRoomRelayScenario
+from scenarios.corporate_email_scenario import CorporateEmailScenario
 
 
 def main():
@@ -33,8 +34,8 @@ def main():
         "--scenario",
         type=str,
         default="cold_room_relay",
-        choices=["cold_room_relay"],
-        help="Scenario to run"
+        choices=["cold_room_relay", "corporate_email"],
+        help="Scenario to run (cold_room_relay or corporate_email)"
     )
     
     parser.add_argument(
@@ -122,8 +123,14 @@ def main():
     # Create scenario
     if args.scenario == "cold_room_relay":
         scenario = ColdRoomRelayScenario()
+    elif args.scenario == "corporate_email":
+        scenario = CorporateEmailScenario(
+            include_infidelity=True,
+            include_ceo_decision=True
+        )
     else:
         print(f"Error: Unknown scenario: {args.scenario}")
+        print(f"Available scenarios: cold_room_relay, corporate_email")
         sys.exit(1)
     
     print(f"Scenario: {scenario.name}")
