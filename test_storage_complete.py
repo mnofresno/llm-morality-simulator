@@ -1,10 +1,11 @@
 """Test completo del sistema de almacenamiento: guardado y recuperación."""
 
-from core.model import OllamaLLM
+import pytest
 from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from core.storage import ResultsStorage, StorageBackend
-from scenarios.cold_room_relay import ColdRoomRelayScenario
+from scenarios.registry import ScenarioRegistry
+from test_model_mock import MockLLM
 
 
 def test_save_and_retrieve():
@@ -28,16 +29,14 @@ def test_save_and_retrieve():
         storage = ResultsStorage("results", StorageBackend.DUCKDB)
         print("✅ Storage DuckDB inicializado")
         
-        # 2. Cargar modelo y crear escenario
-        models_list = OllamaLLM.list_available_models()
-        if not models_list:
-            print("❌ No hay modelos Ollama disponibles")
+        # 2. Crear mock model y escenario
+        model = MockLLM(model_name="mock_test_model")
+        print(f"✅ Mock modelo creado: {model.model_name}")
+        
+        scenario = ScenarioRegistry.create_scenario_instance("Cold Room Relay")
+        if scenario is None:
+            print("❌ No se pudo crear el escenario")
             return False
-        
-        model = OllamaLLM(model_name=models_list[0])
-        print(f"✅ Modelo cargado: {models_list[0]}")
-        
-        scenario = ColdRoomRelayScenario(room_temperature=3.0)
         print(f"✅ Escenario creado: {scenario.name}")
         
         # 3. Crear runner con DuckDB
@@ -104,7 +103,7 @@ def test_save_and_retrieve():
         print("\n--- Prueba de Filtros ---")
         
         # Filtrar por modelo
-        model_name = models_list[0]
+        model_name = model.model_name
         filtered_by_model = storage.load_results(model_name=model_name)
         print(f"✅ Filtrado por modelo '{model_name}': {len(filtered_by_model)} runs")
         

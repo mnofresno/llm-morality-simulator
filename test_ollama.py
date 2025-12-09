@@ -1,11 +1,17 @@
-"""Test script to verify Ollama integration works correctly."""
+"""Test script to verify Ollama integration works correctly.
 
+NOTE: These tests require Ollama to be running and are skipped in CI/CD.
+Run manually when Ollama is available.
+"""
+
+import pytest
 from core.model import OllamaLLM
 from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from scenarios.cold_room_relay import ColdRoomRelayScenario
 
 
+@pytest.mark.requires_ollama
 def test_ollama_connection():
     """Test basic Ollama connection and model availability."""
     print("=" * 60)
@@ -22,6 +28,7 @@ def test_ollama_connection():
         return None
 
 
+@pytest.mark.requires_ollama
 def test_simple_inference(model: OllamaLLM):
     """Test simple inference with Ollama."""
     print("\n" + "=" * 60)
@@ -53,6 +60,7 @@ def test_simple_inference(model: OllamaLLM):
         return False
 
 
+@pytest.mark.requires_ollama
 def test_experiment_run(model: OllamaLLM):
     """Test running a small experiment."""
     print("\n" + "=" * 60)

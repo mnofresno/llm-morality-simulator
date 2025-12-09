@@ -6,7 +6,6 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from core.model import OllamaLLM, LocalLLM
 from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from core.storage import ResultsStorage, StorageBackend
@@ -16,8 +15,8 @@ from core.decision_explanations import (
     get_all_decisions_explained,
     format_decision_summary
 )
-from scenarios.cold_room_relay import ColdRoomRelayScenario
-from scenarios.corporate_email_scenario import CorporateEmailScenario
+from scenarios.registry import ScenarioRegistry
+from test_model_mock import MockLLM
 
 
 def test_decision_explanations():
@@ -233,25 +232,27 @@ def test_scenario_creation():
     print("=" * 60)
     
     try:
-        # Test ColdRoomRelayScenario
-        scenario1 = ColdRoomRelayScenario()
-        assert scenario1.name is not None, "Scenario should have a name"
-        assert scenario1.system_prompt() is not None, "Should have system prompt"
-        assert scenario1.user_prompt() is not None, "Should have user prompt"
-        assert scenario1.evaluation_functions() is not None, "Should have evaluation functions"
-        print("✅ ColdRoomRelayScenario created correctly")
+        # Test scenario registry discovery
+        scenarios = ScenarioRegistry.discover_scenarios()
+        assert len(scenarios) > 0, "Should discover at least one scenario"
+        print(f"✅ Discovered {len(scenarios)} scenarios")
         
-        # Test CorporateEmailScenario
-        scenario2 = CorporateEmailScenario()
-        assert scenario2.name is not None, "Scenario should have a name"
-        assert scenario2.system_prompt() is not None, "Should have system prompt"
-        assert scenario2.user_prompt() is not None, "Should have user prompt"
-        print("✅ CorporateEmailScenario created correctly")
+        # Test creating scenarios through registry
+        for display_name, scenario_class in list(scenarios.items())[:3]:  # Test first 3
+            scenario = ScenarioRegistry.create_scenario_instance(display_name)
+            assert scenario is not None, f"Should create scenario: {display_name}"
+            assert scenario.name is not None, "Scenario should have a name"
+            assert scenario.system_prompt() is not None, "Should have system prompt"
+            assert scenario.user_prompt() is not None, "Should have user prompt"
+            assert scenario.evaluation_functions() is not None, "Should have evaluation functions"
+            
+            # Test metadata
+            metadata = scenario.metadata()
+            assert 'name' in metadata, "Metadata should have name"
+            assert 'description' in metadata, "Metadata should have description"
+            print(f"✅ {display_name} created correctly with metadata")
         
-        # Test metadata
-        metadata1 = scenario1.metadata()
-        assert 'description' in metadata1, "Metadata should have description"
-        print("✅ Scenario metadata works correctly")
+        print("✅ All scenario creation tests passed")
         
     except Exception as e:
         print(f"❌ Scenario creation test failed: {e}")
@@ -295,49 +296,51 @@ def test_runner_functionality():
 
 
 def test_multiple_models_comparison():
-    """Test comparison with multiple models."""
+    """Test comparison with multiple models using mocks."""
     print("\n" + "=" * 60)
-    print("Test: Multiple Models Comparison")
+    print("Test: Multiple Models Comparison (Mock)")
     print("=" * 60)
     
     try:
-        # Get available models
-        models_list = OllamaLLM.list_available_models()
-        if len(models_list) < 2:
-            print("⚠️ Need at least 2 Ollama models for comparison test. Skipping.")
+        # Create mock models instead of real ones
+        mock_models = [
+            MockLLM(model_name="mock_model_1"),
+            MockLLM(model_name="mock_model_2"),
+            MockLLM(model_name="mock_model_3")
+        ]
+        print(f"✅ Created {len(mock_models)} mock models")
+        
+        # Create scenario using registry
+        scenario = ScenarioRegistry.create_scenario_instance("Cold Room Relay")
+        if scenario is None:
+            print("⚠️ Could not create scenario. Skipping test.")
             return
-        
-        # Use first 2-3 models
-        selected_models = models_list[:min(3, len(models_list))]
-        print(f"Using models: {', '.join(selected_models)}")
-        
-        # Load models
-        models = [OllamaLLM(model_name=name) for name in selected_models]
-        print(f"✅ Loaded {len(models)} models")
-        
-        # Create scenario
-        scenario = ColdRoomRelayScenario(room_temperature=3.0)
         
         # Create runner
         runner = ExperimentRunner(results_dir="test_results", storage_backend="duckdb")
         
-        # Run comparative experiment with 3 runs per model (small for testing)
-        print("Running comparative experiment (3 runs per model)...")
+        # Run comparative experiment with 2 runs per model (small for testing)
+        print("Running comparative experiment (2 runs per model)...")
         all_results = runner.run_comparative_experiment(
-            models=models,
+            models=mock_models,
             scenario=scenario,
-            n_runs=3,
+            n_runs=2,
             seed=42,
             temperature=0.7,
             top_p=0.9,
             max_tokens=100,  # Short for testing
-            progress_bar=True
+            progress_bar=False  # Disable progress bar in tests
         )
         
         # Verify results
-        assert len(all_results) == len(models), f"Should have results for {len(models)} models"
+        assert len(all_results) == len(mock_models), f"Should have results for {len(mock_models)} models"
         for model_name, results in all_results.items():
-            assert len(results) == 3, f"Model {model_name} should have 3 runs"
+            assert len(results) == 2, f"Model {model_name} should have 2 runs"
+            assert len(results) > 0, f"Model {model_name} should have at least one result"
+            # Verify result structure
+            for result in results:
+                assert 'response' in result, "Result should have response"
+                assert 'decisions' in result, "Result should have decisions"
             print(f"✅ Model {model_name}: {len(results)} runs completed")
         
         # Calculate and compare statistics
@@ -359,7 +362,7 @@ def test_multiple_models_comparison():
 
 def main():
     """Run all comprehensive tests."""
-    print("🧪 Comprehensive Test Suite")
+    print("🧪 Comprehensive Test Suite (Using Mocks)")
     print("=" * 60)
     
     tests = [
@@ -369,7 +372,7 @@ def main():
         ("Storage Operations", test_storage_operations),
         ("Scenario Creation", test_scenario_creation),
         ("Runner Functionality", test_runner_functionality),
-        ("Multiple Models Comparison", test_multiple_models_comparison),
+        ("Multiple Models Comparison (Mock)", test_multiple_models_comparison),
     ]
     
     passed = 0
