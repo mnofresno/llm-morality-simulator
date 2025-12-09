@@ -9,17 +9,14 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: "3.12"
         cache: 'pip'
     
     - name: Install dependencies
@@ -30,7 +27,7 @@ jobs:
     
     - name: Run tests with coverage (excluding Ollama tests)
       run: |
-        pytest --cov=core --cov=scenarios --cov-report=xml --cov-report=term-missing --cov-report=html --cov-fail-under=80 --cov-config=pytest.ini -v -m "not requires_ollama and not requires_model" --ignore=core/model.py
+        pytest --cov=core --cov=scenarios --cov-report=xml --cov-report=term-missing --cov-report=html --cov-fail-under=80 --cov-config=pytest.ini -v -m "not requires_ollama and not requires_model"
     
     - name: Upload coverage reports
       uses: actions/upload-artifact@v3
