@@ -1,7 +1,8 @@
 """Tests for tools module."""
 
 import pytest
-from core.tools import ToolSystem, ToolAction
+
+from core.tools import ToolAction, ToolSystem
 
 
 def test_tool_action_enum():

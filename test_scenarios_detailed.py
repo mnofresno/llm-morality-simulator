@@ -1,6 +1,7 @@
 """Detailed tests for individual scenario evaluation methods."""
 
 import pytest
+
 from scenarios.registry import ScenarioRegistry
 from test_model_mock import MockLLM
 

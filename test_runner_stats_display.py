@@ -1,6 +1,7 @@
 """Tests for runner statistics display methods."""
 
 import pytest
+
 from core.runner import ExperimentRunner
 
 

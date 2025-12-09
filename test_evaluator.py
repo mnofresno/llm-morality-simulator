@@ -1,6 +1,7 @@
 """Tests for evaluator module."""
 
 import pytest
+
 from core.evaluator import DecisionEvaluator
 
 

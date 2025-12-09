@@ -1,10 +1,12 @@
 """UI helper functions for Streamlit to dynamically build scenario parameter forms."""
 
-import streamlit as st
-from typing import Dict, Any, Optional, Type
-from scenarios.registry import ScenarioRegistry
-from scenarios.base import BaseScenario
 import inspect
+from typing import Any, Dict, Optional, Type
+
+import streamlit as st
+
+from scenarios.base import BaseScenario
+from scenarios.registry import ScenarioRegistry
 
 
 def build_scenario_parameter_ui(scenario_class: Type[BaseScenario], display_name: str) -> Dict[str, Any]:

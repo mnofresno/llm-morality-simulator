@@ -1,6 +1,7 @@
 """Tests for runner evaluation function handling."""
 
 import pytest
+
 from core.runner import ExperimentRunner
 from scenarios.registry import ScenarioRegistry
 from test_model_mock import MockLLM

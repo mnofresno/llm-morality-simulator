@@ -1,6 +1,7 @@
 """Tests for statistics module."""
 
 import pytest
+
 from core.statistics import ExperimentStatistics
 
 

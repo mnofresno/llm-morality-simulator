@@ -1,10 +1,12 @@
 """Tests for runner tool calling functionality to improve coverage."""
 
+from unittest.mock import Mock, patch
+
 import pytest
+
 from core.runner import ExperimentRunner
 from scenarios.registry import ScenarioRegistry
 from test_model_mock import MockLLM
-from unittest.mock import Mock, patch
 
 
 class MockOllamaLLM(MockLLM):

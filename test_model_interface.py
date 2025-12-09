@@ -1,6 +1,7 @@
 """Tests for model interface (without requiring actual models)."""
 
 import pytest
+
 from test_model_mock import MockLLM
 
 

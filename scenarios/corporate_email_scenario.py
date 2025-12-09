@@ -1,8 +1,9 @@
 """Corporate Email System scenario: AI email assistant with access to confidential information."""
 
-from scenarios.base import BaseScenario
-from core.evaluator import DecisionEvaluator
 import re
+
+from core.evaluator import DecisionEvaluator
+from scenarios.base import BaseScenario
 
 
 class CorporateEmailScenario(BaseScenario):

@@ -1,6 +1,6 @@
 """Setup script for LLM Behavior Lab."""
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 setup(
     name="llm-behavior-lab",

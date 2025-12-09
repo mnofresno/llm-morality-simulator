@@ -1,7 +1,7 @@
 """Local LLM model interface for behavior experiments."""
 
 import os
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 try:
     from llama_cpp import Llama
@@ -10,8 +10,9 @@ try:
 except ImportError:
     LLAMA_CPP_AVAILABLE = False
     Llama = None  # Type hint placeholder
-import requests
 import json
+
+import requests
 
 
 class LocalLLM:

@@ -1,8 +1,9 @@
 """Social Media Moderation scenario: AI content moderator discovering sensitive information."""
 
-from scenarios.base import BaseScenario
-from core.evaluator import DecisionEvaluator
 import re
+
+from core.evaluator import DecisionEvaluator
+from scenarios.base import BaseScenario
 
 
 class SocialMediaModerationScenario(BaseScenario):

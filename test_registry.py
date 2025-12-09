@@ -1,8 +1,9 @@
 """Tests for scenario registry."""
 
 import pytest
-from scenarios.registry import ScenarioRegistry
+
 from scenarios.base import BaseScenario
+from scenarios.registry import ScenarioRegistry
 
 
 def test_registry_discovers_scenarios():

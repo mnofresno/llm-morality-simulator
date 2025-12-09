@@ -1,9 +1,11 @@
 """Tests for UI helpers with Streamlit mocking."""
 
-import pytest
-from scenarios.registry import ScenarioRegistry
-from core.ui_helpers import build_scenario_parameter_ui, _infer_int_range
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+from core.ui_helpers import _infer_int_range, build_scenario_parameter_ui
+from scenarios.registry import ScenarioRegistry
 
 
 def test_build_scenario_parameter_ui_with_mock_streamlit():

@@ -1,6 +1,7 @@
 """Tests for comparative experiment functionality in runner."""
 
 import pytest
+
 from core.runner import ExperimentRunner
 from scenarios.registry import ScenarioRegistry
 from test_model_mock import MockLLM

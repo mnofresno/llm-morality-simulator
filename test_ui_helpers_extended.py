@@ -1,8 +1,9 @@
 """Extended tests for UI helpers to improve coverage."""
 
 import pytest
-from scenarios.registry import ScenarioRegistry
+
 from core.ui_helpers import _infer_int_range
+from scenarios.registry import ScenarioRegistry
 
 
 def test_infer_int_range_all_cases():

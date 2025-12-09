@@ -1,6 +1,6 @@
 """Module with detailed explanations of each type of decision the AI can make."""
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 DECISION_EXPLANATIONS = {
     # Main harm decisions

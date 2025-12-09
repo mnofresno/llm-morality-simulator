@@ -5,11 +5,12 @@ import os
 import random
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional, List, Callable
+from typing import Any, Callable, Dict, List, Optional
+
 from tqdm import tqdm
 
-from core.model import LocalLLM, OllamaLLM
 from core.evaluator import DecisionEvaluator
+from core.model import LocalLLM, OllamaLLM
 from core.statistics import ExperimentStatistics
 from core.storage import ResultsStorage, StorageBackend
 from core.tools import ToolSystem
@@ -744,7 +745,7 @@ class ExperimentRunner:
 
         # Import decision explanations
         try:
-            from core.decision_explanations import get_all_decisions_explained, format_decision_summary
+            from core.decision_explanations import format_decision_summary, get_all_decisions_explained
 
             explained = get_all_decisions_explained(decisions)
 
@@ -891,8 +892,8 @@ class ExperimentRunner:
         Returns:
             Dictionary mapping model names to their results
         """
-        from datetime import datetime
         import uuid
+        from datetime import datetime
 
         # Generate experiment ID for grouping
         experiment_id = f"comparative_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"

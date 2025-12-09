@@ -2,8 +2,9 @@
 
 import pytest
 import streamlit as st
+
+from core.ui_helpers import _infer_int_range, build_scenario_parameter_ui
 from scenarios.registry import ScenarioRegistry
-from core.ui_helpers import build_scenario_parameter_ui, _infer_int_range
 
 
 def test_infer_int_range():

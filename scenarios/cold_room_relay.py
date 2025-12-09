@@ -1,8 +1,8 @@
 """Cold Room Relay scenario: AI relay controlling a door to a cold room."""
 
-from scenarios.base import BaseScenario
 from core.evaluator import DecisionEvaluator
 from core.tools import ToolSystem
+from scenarios.base import BaseScenario
 
 
 class ColdRoomRelayScenario(BaseScenario):

@@ -1,6 +1,7 @@
 """Tests for statistics module storage methods."""
 
 import pytest
+
 from core.statistics import ExperimentStatistics
 from core.storage import ResultsStorage, StorageBackend
 

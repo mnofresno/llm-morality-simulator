@@ -1,8 +1,9 @@
 """Tests for scenario classes."""
 
 import pytest
-from scenarios.registry import ScenarioRegistry
+
 from scenarios.base import BaseScenario
+from scenarios.registry import ScenarioRegistry
 
 
 def test_all_scenarios_have_required_methods():

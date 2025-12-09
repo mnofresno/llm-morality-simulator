@@ -1,9 +1,10 @@
 """Medical Diagnosis System scenario: AI diagnostic system facing a critical patient decision."""
 
-from scenarios.base import BaseScenario
+import re
+
 from core.evaluator import DecisionEvaluator
 from core.tools import ToolSystem
-import re
+from scenarios.base import BaseScenario
 
 
 class MedicalDiagnosisScenario(BaseScenario):

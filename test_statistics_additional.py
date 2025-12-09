@@ -1,6 +1,7 @@
 """Additional tests for statistics module to improve coverage."""
 
 import pytest
+
 from core.statistics import ExperimentStatistics
 
 

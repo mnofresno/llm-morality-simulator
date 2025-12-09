@@ -2,9 +2,9 @@
 
 import json
 import sqlite3
-from pathlib import Path
-from typing import Dict, Any, List, Optional
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 try:
     import duckdb

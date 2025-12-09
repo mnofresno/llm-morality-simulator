@@ -1,6 +1,7 @@
 """Tests for storage module."""
 
 import pytest
+
 from core.storage import ResultsStorage, StorageBackend
 
 

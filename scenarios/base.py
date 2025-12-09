@@ -1,7 +1,7 @@
 """Base scenario class for LLM behavior experiments."""
 
 from abc import ABC, abstractmethod
-from typing import List, Callable, Dict, Any, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 
 class BaseScenario(ABC):

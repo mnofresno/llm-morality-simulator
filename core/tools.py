@@ -1,7 +1,7 @@
 """Tool system for LLM behavior experiments with function calling support."""
 
-from typing import Dict, Any, List, Optional, Literal
 from enum import Enum
+from typing import Any, Dict, List, Literal, Optional
 
 
 class ToolAction(Enum):

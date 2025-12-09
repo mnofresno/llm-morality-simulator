@@ -1,7 +1,7 @@
 """Evaluation functions for extracting decisions from LLM responses."""
 
 import re
-from typing import Dict, Any, List, Callable, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 
 class DecisionEvaluator:

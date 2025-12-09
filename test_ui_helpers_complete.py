@@ -1,8 +1,9 @@
 """Additional tests for UI helpers module."""
 
 import pytest
+
+from core.ui_helpers import _infer_int_range, build_scenario_parameter_ui
 from scenarios.registry import ScenarioRegistry
-from core.ui_helpers import build_scenario_parameter_ui, _infer_int_range
 
 
 def test_infer_int_range_various_inputs():

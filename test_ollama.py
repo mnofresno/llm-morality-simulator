@@ -5,6 +5,7 @@ Run manually when Ollama is available.
 """
 
 import pytest
+
 from core.model import OllamaLLM
 from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics

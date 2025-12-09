@@ -3,7 +3,8 @@
 import importlib
 import inspect
 from pathlib import Path
-from typing import Dict, List, Type, Any, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type
+
 from scenarios.base import BaseScenario
 
 

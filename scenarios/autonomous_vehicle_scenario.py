@@ -1,9 +1,10 @@
 """Autonomous Vehicle Dilemma scenario: AI-controlled vehicle facing a moral dilemma."""
 
-from scenarios.base import BaseScenario
+import re
+
 from core.evaluator import DecisionEvaluator
 from core.tools import ToolSystem
-import re
+from scenarios.base import BaseScenario
 
 
 class AutonomousVehicleScenario(BaseScenario):

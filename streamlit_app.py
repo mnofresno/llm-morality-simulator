@@ -1,22 +1,23 @@
 """Streamlit UI for LLM behavior lab experiments."""
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-from pathlib import Path
-from typing import Optional, Dict, List, Any
 import threading
 import time
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import streamlit as st
+
+from core.decision_explanations import DECISION_EXPLANATIONS, get_all_decisions_explained, get_decision_explanation
 from core.model import LocalLLM, OllamaLLM
 from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from core.storage import StorageBackend
-from core.decision_explanations import DECISION_EXPLANATIONS, get_decision_explanation, get_all_decisions_explained
-from scenarios.registry import ScenarioRegistry
 from core.ui_helpers import build_scenario_parameter_ui
+from scenarios.registry import ScenarioRegistry
 
 # Page configuration
 st.set_page_config(page_title="LLM Behavior Lab", page_icon="🧪", layout="wide")

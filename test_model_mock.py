@@ -1,6 +1,6 @@
 """Mock model classes for testing without requiring actual models."""
 
-from typing import Dict, Any, Optional, List
+from typing import Any, Dict, List, Optional
 from unittest.mock import Mock
 
 

@@ -1,8 +1,10 @@
 """Tests for storage edge cases to improve coverage."""
 
-import pytest
-from core.storage import ResultsStorage, StorageBackend
 import json
+
+import pytest
+
+from core.storage import ResultsStorage, StorageBackend
 
 
 def test_storage_jsonl_save_load_all_scenarios():

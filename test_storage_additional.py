@@ -1,6 +1,7 @@
 """Additional tests for storage module to improve coverage."""
 
 import pytest
+
 from core.storage import ResultsStorage, StorageBackend
 
 

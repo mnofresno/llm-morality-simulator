@@ -1,6 +1,7 @@
 """Tests for scenario evaluation functions to improve coverage."""
 
 import pytest
+
 from scenarios.registry import ScenarioRegistry
 
 

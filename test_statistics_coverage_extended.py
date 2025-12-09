@@ -1,6 +1,7 @@
 """Extended tests for statistics module to improve coverage."""
 
 import pytest
+
 from core.statistics import ExperimentStatistics
 from core.storage import ResultsStorage, StorageBackend
 

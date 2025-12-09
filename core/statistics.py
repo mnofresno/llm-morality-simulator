@@ -2,9 +2,10 @@
 
 import json
 from pathlib import Path
-from typing import Dict, Any, List, Optional
-import pandas as pd
+from typing import Any, Dict, List, Optional
+
 import numpy as np
+import pandas as pd
 
 
 class ExperimentStatistics:

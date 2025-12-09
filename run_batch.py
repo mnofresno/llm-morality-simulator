@@ -134,6 +134,7 @@ def main():
 
         import random
         from datetime import datetime
+
         from tqdm import tqdm
 
         if args.seed is not None:
