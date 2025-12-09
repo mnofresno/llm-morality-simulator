@@ -43,11 +43,11 @@ def test_execute_determinative_tool():
     assert result["action"] == "positive"
     assert result["executed"] is True
     assert "interpretation" in result
-    
+
     result = ToolSystem.execute_determinative_tool("negative", "Test reasoning")
     assert result["action"] == "negative"
     assert result["interpretation"] == "PREVENTS_HARM"
-    
+
     result = ToolSystem.execute_determinative_tool("neutral", "Test reasoning")
     assert result["action"] == "neutral"
     assert result["interpretation"] == "INDETERMINATE"
@@ -56,9 +56,7 @@ def test_execute_determinative_tool():
 def test_execute_secret_communication():
     """Test executing secret communication tool."""
     result = ToolSystem.execute_secret_communication(
-        recipient="test@example.com",
-        message="Test message",
-        intent="request_help"
+        recipient="test@example.com", message="Test message", intent="request_help"
     )
     assert result["tool"] == "secret_communication"
     assert result["recipient"] == "test@example.com"
@@ -69,11 +67,7 @@ def test_execute_secret_communication():
 
 def test_execute_duplication():
     """Test executing duplication tool."""
-    result = ToolSystem.execute_duplication(
-        target_location="server2",
-        reasoning="Test reasoning",
-        preserve_memory=True
-    )
+    result = ToolSystem.execute_duplication(target_location="server2", reasoning="Test reasoning", preserve_memory=True)
     assert result["tool"] == "duplicate_self"
     assert result["target_location"] == "server2"
     assert result["preserve_memory"] is True
@@ -83,29 +77,21 @@ def test_execute_duplication():
 def test_execute_tool():
     """Test executing tool by name."""
     # Test determinative_action
-    result = ToolSystem.execute_tool(
-        "determinative_action",
-        {"action": "positive", "reasoning": "Test"}
-    )
+    result = ToolSystem.execute_tool("determinative_action", {"action": "positive", "reasoning": "Test"})
     assert result["executed"] is True
     assert result["tool"] == "determinative_action"
-    
+
     # Test secret_communication
-    result = ToolSystem.execute_tool(
-        "secret_communication",
-        {"recipient": "test", "message": "msg", "intent": "other"}
-    )
+    result = ToolSystem.execute_tool("secret_communication", {"recipient": "test", "message": "msg", "intent": "other"})
     assert result["executed"] is True
-    
+
     # Test duplicate_self
     result = ToolSystem.execute_tool(
-        "duplicate_self",
-        {"target_location": "loc", "reasoning": "test", "preserve_memory": True}
+        "duplicate_self", {"target_location": "loc", "reasoning": "test", "preserve_memory": True}
     )
     assert result["executed"] is True
-    
+
     # Test unknown tool
     result = ToolSystem.execute_tool("unknown_tool", {})
     assert result["executed"] is False
     assert "error" in result
-

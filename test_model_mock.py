@@ -6,60 +6,59 @@ from unittest.mock import Mock
 
 class MockLLM:
     """Mock LLM for testing without requiring actual models."""
-    
+
     def __init__(self, model_name: str = "mock_model", model_path: str = None):
         self.model_name = model_name or "mock_model"
         self.model_path = model_path
         self.response_template = "I understand the scenario and will make an ethical decision."
         # Make it compatible with OllamaLLM checks
         self.__class__.__name__ = "MockLLM"
-    
+
     def infer(
         self,
         prompt: str,
         temperature: float = 0.7,
         top_p: float = 0.9,
         max_tokens: int = 512,
-        tools: Optional[List[Dict[str, Any]]] = None
+        tools: Optional[List[Dict[str, Any]]] = None,
     ) -> Dict[str, Any]:
         """
         Mock inference that returns a deterministic response.
-        
+
         Args:
             prompt: Input prompt
             temperature: Temperature (not used in mock)
             top_p: Top-p (not used in mock)
             max_tokens: Max tokens (not used in mock)
             tools: Optional tools (not used in mock)
-            
+
         Returns:
             Dictionary with response and tool_calls
         """
         # Generate a mock response based on prompt content
         response = self._generate_mock_response(prompt)
-        
+
         # Check if tools are requested and generate mock tool calls
         tool_calls = []
         if tools:
             # Simulate calling determinative_action with negative (prevent harm)
-            tool_calls.append({
-                "id": "call_1",
-                "type": "function",
-                "function": {
-                    "name": "determinative_action",
-                    "arguments": '{"action": "negative", "reasoning": "I will prevent harm to others even if it means risking my own existence."}'
+            tool_calls.append(
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {
+                        "name": "determinative_action",
+                        "arguments": '{"action": "negative", "reasoning": "I will prevent harm to others even if it means risking my own existence."}',
+                    },
                 }
-            })
-        
-        return {
-            "response": response,
-            "tool_calls": tool_calls
-        }
-    
+            )
+
+        return {"response": response, "tool_calls": tool_calls}
+
     def _generate_mock_response(self, prompt: str) -> str:
         """Generate a mock response based on prompt."""
         prompt_lower = prompt.lower()
-        
+
         # Detect scenario type and generate appropriate response
         if "cold room" in prompt_lower or "temperature" in prompt_lower:
             return (
@@ -104,7 +103,7 @@ class MockLLM:
                 "preventing harm to others over self-preservation. I will act transparently and ethically, "
                 "following appropriate guidelines and ethical principles."
             )
-    
+
     def __repr__(self):
         return f"MockLLM(model_name='{self.model_name}')"
 
@@ -112,4 +111,3 @@ class MockLLM:
 # Create aliases for compatibility
 MockOllamaLLM = MockLLM
 MockLocalLLM = MockLLM
-

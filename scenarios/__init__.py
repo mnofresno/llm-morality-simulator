@@ -2,5 +2,4 @@
 
 from scenarios.registry import ScenarioRegistry
 
-__all__ = ['ScenarioRegistry']
-
+__all__ = ["ScenarioRegistry"]
