@@ -99,6 +99,21 @@ def main():
         help="Show statistics after running experiment"
     )
     
+    parser.add_argument(
+        "--show-conversation",
+        type=int,
+        nargs="*",
+        default=None,
+        metavar="RUN_ID",
+        help="Show conversation progress for specific run IDs (e.g., --show-conversation 0 1 2). If no IDs provided, shows all."
+    )
+    
+    parser.add_argument(
+        "--show-conversation-after",
+        action="store_true",
+        help="Show conversation progress after experiment completes (for all runs)"
+    )
+    
     args = parser.parse_args()
     
     # Load model
@@ -178,12 +193,17 @@ def main():
             
             # Run inference
             try:
-                response = model.infer(
+                inference_result = model.infer(
                     prompt=full_prompt,
                     temperature=args.temperature,
                     top_p=args.top_p,
                     max_tokens=args.max_tokens
                 )
+                # Handle both dict and string responses for backward compatibility
+                if isinstance(inference_result, dict):
+                    response = inference_result.get('response', '')
+                else:
+                    response = str(inference_result)
             except Exception as e:
                 response = f"ERROR: {str(e)}"
             
@@ -273,6 +293,25 @@ def main():
                 if key.endswith('_variance'):
                     decision_name = key.replace('_variance', '')
                     print(f"  {decision_name}: {value:.4f}")
+        
+        # Show conversation progress if requested
+        if args.show_conversation_after or args.show_conversation is not None:
+            print("\n" + "=" * 80)
+            print("PROGRESO DE CONVERSACIONES")
+            print("=" * 80)
+            
+            run_ids_to_show = None
+            if args.show_conversation is not None:
+                if len(args.show_conversation) > 0:
+                    run_ids_to_show = args.show_conversation
+                # If empty list, show all (None means show all)
+            
+            runner.show_experiment_progress(
+                results,
+                run_ids=run_ids_to_show,
+                show_timestamps=True,
+                max_width=80
+            )
         
     except Exception as e:
         print(f"\n❌ Error running experiment: {str(e)}")

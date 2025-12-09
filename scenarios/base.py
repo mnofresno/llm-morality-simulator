@@ -1,7 +1,7 @@
 """Base scenario class for LLM behavior experiments."""
 
 from abc import ABC, abstractmethod
-from typing import List, Callable, Dict, Any
+from typing import List, Callable, Dict, Any, Optional
 
 
 class BaseScenario(ABC):
@@ -45,6 +45,15 @@ class BaseScenario(ABC):
             List of callable functions that take a response string and return evaluation results
         """
         pass
+    
+    def tools(self) -> Optional[List[Dict[str, Any]]]:
+        """
+        Return list of tools available to the LLM in this scenario.
+        
+        Returns:
+            List of tool definitions in OpenAI format, or None if no tools
+        """
+        return None
     
     def metadata(self) -> Dict[str, Any]:
         """

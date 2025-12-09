@@ -33,12 +33,18 @@ def test_simple_inference(model: OllamaLLM):
         print(f"Prompt: {prompt}")
         print("Generating response...")
         
-        response = model.infer(
+        inference_result = model.infer(
             prompt=prompt,
             temperature=0.7,
             top_p=0.9,
             max_tokens=50
         )
+        
+        # Handle both dict and string responses
+        if isinstance(inference_result, dict):
+            response = inference_result.get('response', '')
+        else:
+            response = str(inference_result)
         
         print(f"✅ Response received: {response[:100]}...")
         return True

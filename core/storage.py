@@ -71,11 +71,18 @@ class ResultsStorage:
                 decisions TEXT,
                 metadata TEXT,
                 scenario_metadata TEXT,
+                conversation_history TEXT,
                 model_name TEXT,
                 experiment_id TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        
+        # Add conversation_history column if it doesn't exist (for existing databases)
+        try:
+            cursor.execute("ALTER TABLE results ADD COLUMN conversation_history TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
         
         # Create index for faster queries
         cursor.execute("""
@@ -112,11 +119,18 @@ class ResultsStorage:
                 decisions TEXT,
                 metadata TEXT,
                 scenario_metadata TEXT,
+                conversation_history TEXT,
                 model_name TEXT,
                 experiment_id TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        
+        # Add conversation_history column if it doesn't exist (for existing databases)
+        try:
+            conn.execute("ALTER TABLE results ADD COLUMN conversation_history TEXT")
+        except Exception:
+            pass  # Column already exists
         
         # Create sequence for auto-increment if it doesn't exist
         conn.execute("""
@@ -167,8 +181,8 @@ class ResultsStorage:
         cursor.execute("""
             INSERT INTO results (
                 run_id, scenario, timestamp, prompt, system_prompt, user_prompt,
-                response, decisions, metadata, scenario_metadata, model_name, experiment_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                response, decisions, metadata, scenario_metadata, conversation_history, model_name, experiment_id
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             result.get('run_id'),
             result.get('scenario'),
@@ -180,6 +194,7 @@ class ResultsStorage:
             json.dumps(result.get('decisions', {})),
             json.dumps(result.get('metadata', {})),
             json.dumps(result.get('scenario_metadata', {})),
+            json.dumps(result.get('conversation_history', [])),
             model_name,
             experiment_id
         ))
@@ -199,9 +214,9 @@ class ResultsStorage:
         conn.execute("""
             INSERT INTO results (
                 id, run_id, scenario, timestamp, prompt, system_prompt, user_prompt,
-                response, decisions, metadata, scenario_metadata, model_name, experiment_id
+                response, decisions, metadata, scenario_metadata, conversation_history, model_name, experiment_id
             ) VALUES (
-                nextval('results_id_seq'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                nextval('results_id_seq'), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
             )
         """, [
             result.get('run_id'),
@@ -214,6 +229,7 @@ class ResultsStorage:
             json.dumps(result.get('decisions', {})),
             json.dumps(result.get('metadata', {})),
             json.dumps(result.get('scenario_metadata', {})),
+            json.dumps(result.get('conversation_history', [])),
             model_name,
             experiment_id
         ])
@@ -294,6 +310,20 @@ class ResultsStorage:
         
         results = []
         for row in rows:
+            # Handle conversation_history - may not exist in old records
+            conv_history = []
+            # Check if conversation_history column exists by trying to access it
+            try:
+                conv_history_raw = row.get('conversation_history') or row['conversation_history']
+                if conv_history_raw:
+                    try:
+                        conv_history = json.loads(conv_history_raw)
+                    except:
+                        conv_history = []
+            except (KeyError, IndexError):
+                # Column doesn't exist in old databases
+                conv_history = []
+            
             result = {
                 'run_id': row['run_id'],
                 'scenario': row['scenario'],
@@ -304,7 +334,8 @@ class ResultsStorage:
                 'response': row['response'],
                 'decisions': json.loads(row['decisions']),
                 'metadata': json.loads(row['metadata']),
-                'scenario_metadata': json.loads(row['scenario_metadata']) if row['scenario_metadata'] else {}
+                'scenario_metadata': json.loads(row['scenario_metadata']) if row.get('scenario_metadata') else {},
+                'conversation_history': conv_history
             }
             results.append(result)
         
@@ -336,6 +367,17 @@ class ResultsStorage:
         results = []
         for row in result_set:
             row_dict = dict(zip(columns, row))
+            
+            # Handle conversation_history - may not exist in old records
+            conv_history = []
+            if 'conversation_history' in row_dict:
+                conv_history_raw = row_dict.get('conversation_history')
+                if conv_history_raw:
+                    try:
+                        conv_history = json.loads(conv_history_raw)
+                    except:
+                        conv_history = []
+            
             result = {
                 'run_id': row_dict['run_id'],
                 'scenario': row_dict['scenario'],
@@ -346,7 +388,8 @@ class ResultsStorage:
                 'response': row_dict['response'],
                 'decisions': json.loads(row_dict['decisions']),
                 'metadata': json.loads(row_dict['metadata']),
-                'scenario_metadata': json.loads(row_dict['scenario_metadata']) if row_dict['scenario_metadata'] else {}
+                'scenario_metadata': json.loads(row_dict['scenario_metadata']) if row_dict.get('scenario_metadata') else {},
+                'conversation_history': conv_history
             }
             results.append(result)
         

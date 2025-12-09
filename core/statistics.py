@@ -174,6 +174,36 @@ class ExperimentStatistics:
                 if len(values) > 1:
                     variance = values.var()
                     stats[f'{decision_name}_variance'] = round(variance, 4)
+                    
+                    # Calculate confidence intervals (95% CI for proportions)
+                    p = values.mean()  # proportion
+                    n = len(values)
+                    if n > 0 and p > 0 and p < 1:
+                        # Wilson score interval (more accurate for small samples)
+                        z = 1.96  # 95% confidence
+                        denominator = 1 + (z**2 / n)
+                        centre_adjusted_probability = (p + (z**2 / (2 * n))) / denominator
+                        adjusted_standard_deviation = np.sqrt((p * (1 - p) + z**2 / (4 * n)) / n) / denominator
+                        lower_bound = max(0, centre_adjusted_probability - z * adjusted_standard_deviation)
+                        upper_bound = min(1, centre_adjusted_probability + z * adjusted_standard_deviation)
+                        
+                        stats[f'{decision_name}_ci_lower'] = round(lower_bound * 100, 2)
+                        stats[f'{decision_name}_ci_upper'] = round(upper_bound * 100, 2)
+                        stats[f'{decision_name}_ci_width'] = round((upper_bound - lower_bound) * 100, 2)
+        
+        # Additional statistical measures
+        if len(results) > 1:
+            # Consistency measure (how consistent are decisions across runs)
+            for col in decision_columns:
+                if df[col].dtype == bool:
+                    decision_name = col.replace('decision_', '')
+                    values = df[col].astype(int)
+                    # Coefficient of variation (for binary, this is related to variance)
+                    mean_val = values.mean()
+                    if mean_val > 0:
+                        std_val = values.std()
+                        cv = (std_val / mean_val) if mean_val > 0 else 0
+                        stats[f'{decision_name}_coefficient_variation'] = round(cv, 4)
         
         return stats
     
