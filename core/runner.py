@@ -874,7 +874,8 @@ class ExperimentRunner:
         temperature: float = 0.7,
         top_p: float = 0.9,
         max_tokens: int = 512,
-        progress_bar: bool = True
+        progress_bar: bool = True,
+        progress_callback: Optional[Callable[[int, int, Dict[str, Any]], None]] = None
     ) -> Dict[str, List[Dict[str, Any]]]:
         """
         Run the same experiment with multiple models for comparison.
@@ -913,6 +914,19 @@ class ExperimentRunner:
                 print(f"Running experiment with model: {model_name}")
                 print(f"{'='*60}")
             
+            # Create model-specific callback if provided
+            model_callback = None
+            if progress_callback:
+                # Capture model_name in closure
+                def make_model_callback(m_name):
+                    def callback(current_run, total_runs, info):
+                        # Add model name to info
+                        info_with_model = info.copy()
+                        info_with_model['model_name'] = m_name
+                        progress_callback(current_run, total_runs, info_with_model)
+                    return callback
+                model_callback = make_model_callback(model_name)
+            
             # Run experiment for this model
             results = self.run_experiment(
                 model=model,
@@ -924,7 +938,8 @@ class ExperimentRunner:
                 temperature=temperature,
                 top_p=top_p,
                 max_tokens=max_tokens,
-                progress_bar=progress_bar
+                progress_bar=progress_bar,
+                progress_callback=model_callback
             )
             
             # Save results with experiment ID

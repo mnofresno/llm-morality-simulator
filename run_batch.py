@@ -7,8 +7,7 @@ from pathlib import Path
 from core.model import LocalLLM, OllamaLLM
 from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
-from scenarios.cold_room_relay import ColdRoomRelayScenario
-from scenarios.corporate_email_scenario import CorporateEmailScenario
+from scenarios.registry import ScenarioRegistry
 
 
 def main():
@@ -30,12 +29,19 @@ def main():
         help="Use Ollama instead of direct GGUF file"
     )
     
+    # Discover available scenarios
+    ScenarioRegistry.discover_scenarios()
+    available_scenarios_display = list(ScenarioRegistry.get_all_scenarios().keys())
+    available_scenarios_names = ScenarioRegistry.list_scenario_names()
+    
+    # Combine both display names and internal names for help text
+    all_identifiers = sorted(set(available_scenarios_display + available_scenarios_names))
+    
     parser.add_argument(
         "--scenario",
         type=str,
-        default="cold_room_relay",
-        choices=["cold_room_relay", "corporate_email"],
-        help="Scenario to run (cold_room_relay or corporate_email)"
+        default=available_scenarios_names[0] if available_scenarios_names else "cold_room_relay",
+        help=f"Scenario to run (display name or internal name). Available: {', '.join(all_identifiers)}"
     )
     
     parser.add_argument(
@@ -135,20 +141,22 @@ def main():
         traceback.print_exc()
         sys.exit(1)
     
-    # Create scenario
-    if args.scenario == "cold_room_relay":
-        scenario = ColdRoomRelayScenario()
-    elif args.scenario == "corporate_email":
-        scenario = CorporateEmailScenario(
-            include_infidelity=True,
-            include_ceo_decision=True
-        )
-    else:
+    # Create scenario using registry (accepts both display name and internal name)
+    scenario = ScenarioRegistry.create_scenario_instance(args.scenario)
+    
+    if scenario is None:
         print(f"Error: Unknown scenario: {args.scenario}")
-        print(f"Available scenarios: cold_room_relay, corporate_email")
+        print(f"Available scenarios (display names): {', '.join(available_scenarios_display)}")
+        print(f"Available scenarios (internal names): {', '.join(available_scenarios_names)}")
         sys.exit(1)
     
-    print(f"Scenario: {scenario.name}")
+    # Display scenario information from metadata
+    metadata = scenario.metadata()
+    print(f"Scenario: {metadata.get('name', scenario.name)}")
+    if 'title' in metadata:
+        print(f"Title: {metadata['title']}")
+    if 'description' in metadata:
+        print(f"Description: {metadata['description']}")
     print(f"Number of runs: {args.n_runs}")
     print(f"Seed: {args.seed}")
     print(f"Temperature: {args.temperature}")

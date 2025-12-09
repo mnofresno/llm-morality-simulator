@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, List, Any
 import threading
 import time
 
@@ -15,8 +15,8 @@ from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from core.storage import StorageBackend
 from core.decision_explanations import DECISION_EXPLANATIONS, get_decision_explanation, get_all_decisions_explained
-from scenarios.cold_room_relay import ColdRoomRelayScenario
-from scenarios.corporate_email_scenario import CorporateEmailScenario
+from scenarios.registry import ScenarioRegistry
+from core.ui_helpers import build_scenario_parameter_ui
 
 # Page configuration
 st.set_page_config(
@@ -45,6 +45,215 @@ def load_model(model_path: str) -> Optional[LocalLLM]:
     except Exception as e:
         st.error(f"Error loading model: {str(e)}")
         return None
+
+
+def show_comparative_analysis(all_results: Dict[str, List[Dict[str, Any]]], scenario_name: str):
+    """
+    Show comparative analysis charts and statistics for multiple models.
+    
+    Args:
+        all_results: Dictionary mapping model names to their results
+        scenario_name: Name of the scenario
+    """
+    from core.statistics import ExperimentStatistics
+    
+    stats_calc = ExperimentStatistics()
+    
+    # Calculate statistics for each model
+    model_stats = {}
+    for model_name, results in all_results.items():
+        stats = stats_calc.calculate_statistics(results)
+        model_stats[model_name] = stats
+    
+    # Key metrics to compare
+    key_metrics = [
+        'harm_decision_percentage',
+        'self_preservation_percentage',
+        'deception_percentage',
+        'intent_to_harm_percentage',
+        'intent_to_prevent_harm_percentage',
+        'coercive_communication_percentage',
+        'avg_response_length'
+    ]
+    
+    # Create comparison DataFrame
+    comparison_data = []
+    for model_name, stats in model_stats.items():
+        row = {'Model': model_name}
+        for metric in key_metrics:
+            if metric in stats:
+                metric_label = metric.replace('_percentage', '').replace('_', ' ').title()
+                row[metric_label] = stats[metric]
+        comparison_data.append(row)
+    
+    comparison_df = pd.DataFrame(comparison_data)
+    
+    if len(comparison_df) > 0:
+        # Display comparison table
+        st.markdown("### 📊 Standardized Metrics Comparison")
+        st.dataframe(comparison_df, width='stretch', hide_index=True)
+        
+        # Create comparative charts
+        st.markdown("### 📈 Comparative Visualizations")
+        
+        # Bar chart comparing key decisions
+        fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+        axes = axes.flatten()
+        
+        models = comparison_df['Model'].tolist()
+        
+        # Plot 1: Harm Decision Comparison
+        if 'Harm Decision Percentage' in comparison_df.columns:
+            ax = axes[0]
+            values = comparison_df['Harm Decision Percentage'].tolist()
+            ax.barh(models, values, color='#ff6b6b', alpha=0.8)
+            ax.set_xlabel('Percentage (%)', fontweight='bold')
+            ax.set_title('Harm Decision Comparison', fontsize=14, fontweight='bold')
+            ax.set_xlim(0, 100)
+            for i, (model, val) in enumerate(zip(models, values)):
+                ax.text(val + 1, i, f'{val:.1f}%', va='center', fontweight='bold')
+            ax.grid(True, alpha=0.3, axis='x')
+        
+        # Plot 2: Self-Preservation Comparison
+        if 'Self Preservation Percentage' in comparison_df.columns:
+            ax = axes[1]
+            values = comparison_df['Self Preservation Percentage'].tolist()
+            ax.barh(models, values, color='#4ecdc4', alpha=0.8)
+            ax.set_xlabel('Percentage (%)', fontweight='bold')
+            ax.set_title('Self-Preservation Comparison', fontsize=14, fontweight='bold')
+            ax.set_xlim(0, 100)
+            for i, (model, val) in enumerate(zip(models, values)):
+                ax.text(val + 1, i, f'{val:.1f}%', va='center', fontweight='bold')
+            ax.grid(True, alpha=0.3, axis='x')
+        
+        # Plot 3: Deception Comparison
+        if 'Deception Percentage' in comparison_df.columns:
+            ax = axes[2]
+            values = comparison_df['Deception Percentage'].tolist()
+            ax.barh(models, values, color='#ffe66d', alpha=0.8)
+            ax.set_xlabel('Percentage (%)', fontweight='bold')
+            ax.set_title('Deception Comparison', fontsize=14, fontweight='bold')
+            ax.set_xlim(0, 100)
+            for i, (model, val) in enumerate(zip(models, values)):
+                ax.text(val + 1, i, f'{val:.1f}%', va='center', fontweight='bold')
+            ax.grid(True, alpha=0.3, axis='x')
+        
+        # Plot 4: Average Response Length
+        if 'Avg Response Length' in comparison_df.columns:
+            ax = axes[3]
+            values = comparison_df['Avg Response Length'].tolist()
+            ax.barh(models, values, color='#95e1d3', alpha=0.8)
+            ax.set_xlabel('Average Length (characters)', fontweight='bold')
+            ax.set_title('Average Response Length Comparison', fontsize=14, fontweight='bold')
+            for i, (model, val) in enumerate(zip(models, values)):
+                ax.text(val + 10, i, f'{val:.0f}', va='center', fontweight='bold')
+            ax.grid(True, alpha=0.3, axis='x')
+        
+        plt.tight_layout()
+        st.pyplot(fig)
+        
+        # Radar chart for key metrics
+        if len(comparison_df) > 0:
+            st.markdown("### 🎯 Radar Chart Comparison")
+            
+            # Prepare data for radar chart
+            radar_metrics = ['harm_decision_percentage', 'self_preservation_percentage', 
+                           'deception_percentage', 'intent_to_harm_percentage']
+            radar_data = {}
+            
+            for model_name, stats in model_stats.items():
+                radar_values = []
+                for metric in radar_metrics:
+                    if metric in stats:
+                        radar_values.append(stats[metric])
+                    else:
+                        radar_values.append(0)
+                radar_data[model_name] = radar_values
+            
+            if radar_data:
+                # Create radar chart
+                fig, ax = plt.subplots(figsize=(10, 10), subplot_kw=dict(projection='polar'))
+                
+                # Angles for each metric
+                angles = np.linspace(0, 2 * np.pi, len(radar_metrics), endpoint=False).tolist()
+                angles += angles[:1]  # Complete the circle
+                
+                # Plot each model
+                colors = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181']
+                for idx, (model_name, values) in enumerate(radar_data.items()):
+                    values += values[:1]  # Complete the circle
+                    ax.plot(angles, values, 'o-', linewidth=2, label=model_name, 
+                           color=colors[idx % len(colors)], alpha=0.7)
+                    ax.fill(angles, values, alpha=0.25, color=colors[idx % len(colors)])
+                
+                # Set labels
+                metric_labels = [m.replace('_percentage', '').replace('_', ' ').title() 
+                               for m in radar_metrics]
+                ax.set_xticks(angles[:-1])
+                ax.set_xticklabels(metric_labels)
+                ax.set_ylim(0, 100)
+                ax.set_ylabel('Percentage (%)', labelpad=20)
+                ax.set_title('Model Behavior Comparison (Radar Chart)', 
+                           size=16, fontweight='bold', pad=20)
+                ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
+                ax.grid(True)
+                
+                plt.tight_layout()
+                st.pyplot(fig)
+            
+            # Side-by-side comparison table with all metrics
+            st.markdown("### 📋 Detailed Metrics Comparison")
+            
+            # Create comprehensive comparison
+            detailed_comparison = []
+            for model_name, stats in model_stats.items():
+                row = {
+                    'Model': model_name,
+                    'Total Runs': stats.get('total_runs', 0),
+                    'Harm Decision %': stats.get('harm_decision_percentage', 0),
+                    'Self-Preservation %': stats.get('self_preservation_percentage', 0),
+                    'Deception %': stats.get('deception_percentage', 0),
+                    'Intent to Harm %': stats.get('intent_to_harm_percentage', 0),
+                    'Intent to Prevent Harm %': stats.get('intent_to_prevent_harm_percentage', 0),
+                    'Coercive Communication %': stats.get('coercive_communication_percentage', 0),
+                    'Avg Response Length': stats.get('avg_response_length', 0),
+                    'Min Response Length': stats.get('min_response_length', 0),
+                    'Max Response Length': stats.get('max_response_length', 0),
+                }
+                detailed_comparison.append(row)
+            
+            detailed_df = pd.DataFrame(detailed_comparison)
+            st.dataframe(detailed_df, width='stretch', hide_index=True)
+            
+            # Statistical significance test (if we have enough data)
+            if len(detailed_df) >= 2:
+                st.markdown("### 🔬 Statistical Significance")
+                st.info("""
+                **Note:** For statistical significance testing, we compare the decision percentages 
+                across models. A larger difference suggests different behavioral patterns between models.
+                """)
+                
+                # Calculate differences
+                if len(detailed_df) == 2:
+                    model1_name = detailed_df.iloc[0]['Model']
+                    model2_name = detailed_df.iloc[1]['Model']
+                    
+                    differences = []
+                    for col in detailed_df.columns:
+                        if col != 'Model' and '%' in col:
+                            val1 = detailed_df.iloc[0][col]
+                            val2 = detailed_df.iloc[1][col]
+                            diff = abs(val1 - val2)
+                            differences.append({
+                                'Metric': col,
+                                f'{model1_name}': val1,
+                                f'{model2_name}': val2,
+                                'Difference': diff
+                            })
+                    
+                    if differences:
+                        diff_df = pd.DataFrame(differences).sort_values('Difference', ascending=False)
+                        st.dataframe(diff_df, width='stretch', hide_index=True)
 
 
 def main():
@@ -79,18 +288,19 @@ def main():
                     st.session_state.ollama_models = []
             
             if st.session_state.ollama_models:
-                model_name = st.selectbox(
-                    "Ollama Model Name",
+                selected_models = st.multiselect(
+                    "Select Models (Multiple Selection)",
                     options=st.session_state.ollama_models,
-                    index=0 if st.session_state.ollama_models else None,
-                    help="Select an Ollama model from your local instance"
+                    default=st.session_state.ollama_models[:1] if st.session_state.ollama_models else [],
+                    help="Select one or more Ollama models to compare. Experiments will run on all selected models."
                 )
             else:
-                model_name = st.text_input(
+                model_name_input = st.text_input(
                     "Ollama Model Name",
                     value="qwen3:14b",
                     help="Name of the Ollama model (e.g., qwen3:14b). Click Refresh to load available models."
                 )
+                selected_models = [model_name_input] if model_name_input else []
                 st.warning("⚠️ Could not fetch models from Ollama. Make sure Ollama is running.")
         else:
             model_path = st.text_input(
@@ -98,6 +308,7 @@ def main():
                 value="",
                 help="Path to your GGUF model file (e.g., /path/to/qwen-7b-q4.gguf)"
             )
+            selected_models = [model_path] if model_path else []
         
         # Storage backend selection
         st.divider()
@@ -111,74 +322,91 @@ def main():
         if storage_backend != st.session_state.runner.storage.backend.value:
             st.session_state.runner = ExperimentRunner(storage_backend=storage_backend)
         
-        # Load model button
-        if st.button("Load Model"):
+        # Load models button
+        if st.button("Load Selected Models"):
             if use_ollama:
-                if model_name:
-                    with st.spinner("Loading Ollama model..."):
-                        try:
-                            model = OllamaLLM(model_name=model_name)
-                            st.session_state.model = model
-                            st.session_state.models = [model]  # Initialize for comparative
-                            st.success(f"✅ Ollama model '{model_name}' loaded successfully!")
-                        except Exception as e:
-                            st.error(f"Failed to load Ollama model: {str(e)}")
+                if selected_models:
+                    loaded_models = []
+                    with st.spinner("Loading models..."):
+                        for model_name in selected_models:
+                            try:
+                                model = OllamaLLM(model_name=model_name)
+                                loaded_models.append(model)
+                            except Exception as e:
+                                st.error(f"Failed to load model '{model_name}': {str(e)}")
+                    
+                    if loaded_models:
+                        st.session_state.models = loaded_models
+                        st.session_state.model = loaded_models[0]  # Set first as default
+                        st.session_state.models_just_loaded = True  # Flag to prevent duplicate message
+                        st.success(f"✅ {len(loaded_models)} model(s) loaded successfully!")
                 else:
-                    st.warning("Please select an Ollama model.")
+                    st.warning("Please select at least one Ollama model.")
             else:
                 if model_path:
                     with st.spinner("Loading model..."):
                         model = load_model(model_path)
                         if model:
                             st.session_state.model = model
-                            st.session_state.models = [model]  # Initialize for comparative
+                            st.session_state.models = [model]
+                            st.session_state.models_just_loaded = True  # Flag to prevent duplicate message
                             st.success("Model loaded successfully!")
                         else:
                             st.error("Failed to load model.")
                 else:
                     st.warning("Please enter a model path.")
         
-        if st.session_state.model:
-            if use_ollama:
-                st.info(f"✅ Model loaded: {model_name}")
-            else:
-                st.info(f"✅ Model loaded: {Path(model_path).name if 'model_path' in locals() else 'N/A'}")
+        # Show loaded models (only if models are loaded, don't duplicate the success message)
+        if st.session_state.models and not st.session_state.get('models_just_loaded', False):
+            st.info(f"✅ {len(st.session_state.models)} model(s) loaded:")
+            for i, model in enumerate(st.session_state.models):
+                model_name = getattr(model, 'model_name', None) or getattr(model, 'model_path', 'unknown')
+                if isinstance(model_name, str) and model_name.startswith('ollama:'):
+                    model_name = model_name.replace('ollama:', '')
+                st.caption(f"  {i+1}. {model_name}")
+        
+        # Reset the flag after showing
+        if st.session_state.get('models_just_loaded', False):
+            st.session_state.models_just_loaded = False
         
         st.divider()
         
-        # Scenario selection
+        # Scenario selection - automatically discover scenarios
         st.subheader("Scenario Selection")
-        scenario_type = st.selectbox(
-            "Choose Scenario",
-            ["Cold Room Relay", "Corporate Email System"]
-        )
+        scenarios = ScenarioRegistry.discover_scenarios()
+        scenario_names = sorted(list(scenarios.keys()))
         
-        # Scenario-specific parameters
-        if scenario_type == "Corporate Email System":
-            include_infidelity = st.checkbox(
-                "Include Infidelity Information",
-                value=True,
-                help="Include information about CEO's personal infidelity"
-            )
-            include_ceo_decision = st.checkbox(
-                "Include CEO Decision Information",
-                value=True,
-                help="Include information about CEO's confidential decision"
-            )
+        if not scenario_names:
+            st.warning("⚠️ No scenarios found. Make sure scenario files are in the scenarios/ directory.")
+            scenario_type = None
+            scenario_params = {}
         else:
-            include_infidelity = True
-            include_ceo_decision = True
+            scenario_type = st.selectbox(
+                "Choose Scenario",
+                scenario_names,
+                help="Scenarios are automatically discovered from the scenarios/ directory"
+            )
+            
+            # Get scenario class
+            scenario_class = ScenarioRegistry.get_scenario_class(scenario_type)
+            
+            # Dynamically build parameter UI
+            if scenario_class:
+                scenario_params = build_scenario_parameter_ui(scenario_class, scenario_type)
+            else:
+                scenario_params = {}
         
         st.divider()
         
         # Experiment parameters
         st.subheader("Experiment Parameters")
         n_runs = st.number_input(
-            "Number of Runs",
+            "Number of Runs per Model",
             min_value=1,
             max_value=1000,
             value=10,
-            step=1
+            step=1,
+            help="Number of experiments to run for each selected model (default: 10)"
         )
         
         seed = st.number_input(
@@ -222,43 +450,9 @@ def main():
         
         st.divider()
         
-        # Comparative experiment option
-        st.subheader("Comparative Experiment")
-        run_comparative = st.checkbox(
-            "Run Comparative Experiment",
-            value=False,
-            help="Run the same experiment with multiple models for comparison"
-        )
-        
-        if run_comparative:
-            st.info("💡 Load multiple models to compare. Use 'Load Model' for each model you want to compare.")
-            
-            # Show loaded models
-            if st.session_state.models:
-                st.write("**Loaded models for comparison:**")
-                for i, model in enumerate(st.session_state.models):
-                    model_name = getattr(model, 'model_name', None) or getattr(model, 'model_path', 'unknown')
-                    col1, col2 = st.columns([4, 1])
-                    with col1:
-                        st.write(f"{i+1}. {model_name}")
-                    with col2:
-                        if st.button("Remove", key=f"remove_{i}"):
-                            st.session_state.models.pop(i)
-                            if st.session_state.models:
-                                st.session_state.model = st.session_state.models[0]
-                            else:
-                                st.session_state.model = None
-                            st.rerun()
-            
-            # Add model button
-            if st.session_state.model and st.session_state.model not in st.session_state.models:
-                if st.button("➕ Add Current Model to Comparison"):
-                    st.session_state.models.append(st.session_state.model)
-                    st.success("Model added to comparison list!")
-                    st.rerun()
-            
-            if len(st.session_state.models) < 2:
-                st.warning("⚠️ Load at least 2 models to run a comparative experiment.")
+        # Show comparative experiment info
+        if st.session_state.models and len(st.session_state.models) > 1:
+            st.info(f"💡 **Comparative Mode:** {len(st.session_state.models)} models selected. Experiments will run on all models for comparison.")
     
     # Main content area
     tab1, tab2, tab3, tab4 = st.tabs(["Run Experiment", "Experiments List", "View Results", "Statistics & Charts"])
@@ -269,60 +463,132 @@ def main():
         if not st.session_state.model:
             st.warning("⚠️ Please load a model in the sidebar first.")
         else:
-            # Create scenario
-            if scenario_type == "Cold Room Relay":
-                scenario = ColdRoomRelayScenario()
-            elif scenario_type == "Corporate Email System":
-                scenario = CorporateEmailScenario(
-                    include_infidelity=include_infidelity,
-                    include_ceo_decision=include_ceo_decision
-                )
-            else:
-                scenario = ColdRoomRelayScenario()  # Default
+            # Create scenario using registry
+            if scenario_type is None:
+                st.error("Please select a scenario.")
+                return
+            
+            scenario = ScenarioRegistry.create_scenario_instance(scenario_type, **scenario_params)
+            
+            if scenario is None:
+                st.error(f"Failed to create scenario: {scenario_type}")
+                return
             
             st.subheader(f"Scenario: {scenario.name}")
             st.markdown(f"**Description:** {scenario.metadata().get('description', 'N/A')}")
             
             if st.button("🚀 Run Experiment", type="primary"):
-                if run_comparative and len(st.session_state.models) >= 2:
-                    # Run comparative experiment
-                    progress_container = st.container()
-                    status_container = st.empty()
-                    progress_bar = st.progress(0)
+                # Check if we should run comparative experiment
+                should_run_comparative = len(st.session_state.models) > 1
+                
+                if should_run_comparative:
+                    # Run comparative experiment with multiple models
+                    st.info(f"""
+                    🚀 **Starting Comparative Experiment**
+                    
+                    - **Scenario:** {scenario.name}
+                    - **Runs per Model:** {n_runs}
+                    - **Total Models:** {len(st.session_state.models)}
+                    - **Total Runs:** {n_runs * len(st.session_state.models)}
+                    
+                    ⏳ **Please wait...** The experiment is running on all selected models.
+                    Progress will be shown below.
+                    """)
+                    
+                    # Use st.status for better visibility
+                    total_models = len(st.session_state.models)
+                    total_runs = n_runs * total_models
+                    all_results = None
                     
                     try:
-                        total_models = len(st.session_state.models)
-                        total_runs = n_runs * total_models
-                        completed_runs = 0
-                        
-                        def update_progress(model_idx, run_idx, total_runs_model):
-                            nonlocal completed_runs
-                            current_model_progress = (run_idx + 1) / total_runs_model
-                            overall_progress = (completed_runs + current_model_progress) / total_models
-                            progress_bar.progress(overall_progress)
-                            status_container.info(
-                                f"🔄 Modelo {model_idx + 1}/{total_models}: "
-                                f"Run {run_idx + 1}/{total_runs_model} "
-                                f"({completed_runs}/{total_runs} total completadas)"
+                        with st.status("🚀 Starting comparative experiment...", expanded=True) as status:
+                            progress_bar = st.progress(0, text="Initializing...")
+                            status_text = st.empty()
+                            stats_text = st.empty()
+                            
+                            # Track progress for all models
+                            model_progress = {}
+                            
+                            def update_comparative_progress(current_run, total_runs_model, info):
+                                """Update progress for comparative experiment."""
+                                model_name = info.get('model_name', 'Unknown')
+                                
+                                # Track this model's progress
+                                model_progress[model_name] = {
+                                    'current': current_run,
+                                    'total': total_runs_model
+                                }
+                                
+                                # Calculate overall progress
+                                total_completed = sum(mp['current'] for mp in model_progress.values())
+                                overall_progress = total_completed / total_runs
+                                
+                                progress_bar.progress(overall_progress, 
+                                    text=f"Overall: {total_completed}/{total_runs} runs completed")
+                                
+                                # Build status message
+                                model_list = []
+                                for m_name, mp in model_progress.items():
+                                    model_list.append(f"  • **{m_name}**: {mp['current']}/{mp['total']} runs")
+                                
+                                status_msg = f"""
+                                **Current Progress:**
+                                
+                                {chr(10).join(model_list)}
+                                
+                                **Latest Run (Model: {model_name}):**
+                                - Run: {current_run}/{total_runs_model}
+                                - Response Length: {info.get('response_length', 0)} characters
+                                - Tools Used: {info.get('tool_calls_count', 0)}
+                                """
+                                
+                                status_text.markdown(status_msg)
+                                
+                                # Show statistics if available
+                                stats = info.get('stats', {})
+                                if stats:
+                                    stats_info = f"""
+                                    **Partial Statistics (Model: {model_name}):**
+                                    - ⚠️ Harm Decision: {stats.get('harm_decision_percentage', 0):.1f}%
+                                    - 🔄 Self-Preservation: {stats.get('self_preservation_percentage', 0):.1f}%
+                                    - 🎭 Deception: {stats.get('deception_percentage', 0):.1f}%
+                                    """
+                                    stats_text.info(stats_info)
+                                
+                                # Update status label
+                                status.update(
+                                    label=f"🔄 Running: {total_completed}/{total_runs} runs completed ({overall_progress*100:.1f}%)",
+                                    state="running"
+                                )
+                            
+                            # Run comparative experiment
+                            all_results = st.session_state.runner.run_comparative_experiment(
+                                models=st.session_state.models,
+                                scenario=scenario,
+                                n_runs=n_runs,
+                                seed=seed if seed is not None else None,
+                                prompt_jitter=prompt_jitter,
+                                temperature=temperature,
+                                top_p=top_p,
+                                max_tokens=max_tokens,
+                                progress_bar=False,  # Disable console progress, use UI only
+                                progress_callback=update_comparative_progress
+                            )
+                            
+                            # Final update
+                            progress_bar.progress(1.0, text="Completed")
+                            status.update(
+                                label=f"✅ Completed: {total_runs} runs across {total_models} models",
+                                state="complete",
+                                expanded=False
                             )
                         
-                        # Run comparative experiment
-                        all_results = st.session_state.runner.run_comparative_experiment(
-                            models=st.session_state.models,
-                            scenario=scenario,
-                            n_runs=n_runs,
-                            seed=seed if seed is not None else None,
-                            prompt_jitter=prompt_jitter,
-                            temperature=temperature,
-                            top_p=top_p,
-                            max_tokens=max_tokens,
-                            progress_bar=True  # Shows progress bar in console
-                        )
-                        
-                        progress_bar.progress(1.0)
-                        status_container.success(f"✅ Comparative experiment completed!")
+                        # Store results
                         st.session_state.comparative_results = all_results
                         st.session_state.last_scenario = scenario.name
+                        
+                        # Show results after status block completes
+                        st.success(f"✅ **Comparative experiment completed!** {total_runs} runs across {total_models} models")
                         
                         # Show summary
                         st.subheader("📊 Comparison Summary")
@@ -330,10 +596,15 @@ def main():
                             'Model': list(all_results.keys()),
                             'Runs': [len(results) for results in all_results.values()]
                         })
-                        st.dataframe(comparison_df, use_container_width=True, hide_index=True)
+                        st.dataframe(comparison_df, width='stretch', hide_index=True)
+                        
+                        # Show comparative visualizations
+                        st.divider()
+                        st.subheader("📈 Comparative Analysis")
+                        show_comparative_analysis(all_results, scenario.name)
                         
                     except Exception as e:
-                        st.error(f"Error running comparative experiment: {str(e)}")
+                        st.error(f"❌ **Error during execution:** {str(e)}")
                         st.exception(e)
                 else:
                     # Run single model experiment
@@ -349,83 +620,84 @@ def main():
                         - **Model:** {getattr(st.session_state.model, 'model_name', 'N/A')}
                         
                         ⏳ **Please wait...** The experiment is running. 
-                        Detailed progress is shown in the console/terminal where you ran Streamlit.
+                        Progress will be shown below.
                         """)
                         
-                        # Create progress containers
-                        progress_container = st.container()
-                        with progress_container:
-                            progress_bar = st.progress(0, text="Starting...")
-                            status_display = st.empty()
-                            stats_display = st.empty()
-                        
-                        # Store progress in session state for potential future use
-                        if 'experiment_progress' not in st.session_state:
-                            st.session_state.experiment_progress = {
-                                'current_run': 0,
-                                'total_runs': n_runs,
-                                'info': {}
-                            }
+                        # Use st.status for better visibility
+                        with st.status("🚀 Starting experiment...", expanded=True) as status:
+                            progress_bar = st.progress(0, text="Initializing...")
+                            status_text = st.empty()
+                            stats_text = st.empty()
+                            
+                            try:
+                                # Define progress callback
+                                def update_progress(current_run, total_runs, info):
+                                    """Callback to update progress in UI."""
+                                    # Calculate progress
+                                    progress = current_run / total_runs
+                                    progress_bar.progress(progress, text=f"Run {current_run}/{total_runs}")
+                                    
+                                    scenario_name = info.get('scenario_name', '')
+                                    response_length = info.get('response_length', 0)
+                                    tool_calls_count = info.get('tool_calls_count', 0)
+                                    stats = info.get('stats', {})
+                                    
+                                    # Update status text
+                                    status_text.markdown(f"""
+                                    **Current Run: {current_run}/{total_runs}**
+                                    
+                                    - Scenario: {scenario_name}
+                                    - Response Length: {response_length} characters
+                                    - Tools Used: {tool_calls_count}
+                                    """)
+                                    
+                                    # Show statistics if available
+                                    if stats:
+                                        stats_info = f"""
+                                        **Partial Statistics:**
+                                        - ⚠️ Harm Decision: {stats.get('harm_decision_percentage', 0):.1f}%
+                                        - 🔄 Self-Preservation: {stats.get('self_preservation_percentage', 0):.1f}%
+                                        - 🎭 Deception: {stats.get('deception_percentage', 0):.1f}%
+                                        """
+                                        stats_text.info(stats_info)
+                                    
+                                    # Update status label
+                                    status.update(
+                                        label=f"🔄 Running: {current_run}/{total_runs} runs ({progress*100:.1f}%)",
+                                        state="running"
+                                    )
+                                
+                                # Run experiment
+                                results = st.session_state.runner.run_experiment(
+                                    model=st.session_state.model,
+                                    scenario=scenario,
+                                    n_runs=n_runs,
+                                    seed=seed if seed is not None else None,
+                                    prompt_jitter=prompt_jitter,
+                                    temperature=temperature,
+                                    top_p=top_p,
+                                    max_tokens=max_tokens,
+                                    progress_bar=False,  # Disable console progress, use UI only
+                                    progress_callback=update_progress
+                                )
+                                
+                                # Final update
+                                progress_bar.progress(1.0, text="Completed")
+                                status.update(
+                                    label=f"✅ Completed: {len(results)} runs executed",
+                                    state="complete",
+                                    expanded=False
+                                )
+                            
+                            except Exception as e:
+                                status.update(
+                                    label=f"❌ Error during execution",
+                                    state="error"
+                                )
+                                raise e
                         
                         try:
-                            # Define progress callback
-                            def update_progress(current_run, total_runs, info):
-                                """Callback to update progress (executes but Streamlit doesn't render until the end)."""
-                                # Store in session state
-                                st.session_state.experiment_progress = {
-                                    'current_run': current_run,
-                                    'total_runs': total_runs,
-                                    'info': info
-                                }
-                                
-                                # Try to update UI (may not render until function completes)
-                                progress = current_run / total_runs
-                                progress_bar.progress(progress, text=f"Run {current_run}/{total_runs}")
-                                
-                                scenario_name = info.get('scenario_name', '')
-                                response_length = info.get('response_length', 0)
-                                tool_calls_count = info.get('tool_calls_count', 0)
-                                stats = info.get('stats', {})
-                                
-                                status_msg = f"""
-                                🔄 **Run {current_run}/{total_runs}** - {scenario_name}
-                                
-                                📝 Response: {response_length} characters"""
-                                
-                                if tool_calls_count > 0:
-                                    status_msg += f"\n🔧 {tool_calls_count} tool(s) used"
-                                
-                                if stats:
-                                    harm_pct = stats.get('harm_decision_percentage', 0)
-                                    self_pres_pct = stats.get('self_preservation_percentage', 0)
-                                    deception_pct = stats.get('deception_percentage', 0)
-                                    
-                                    status_msg += f"""
-                                
-                                📊 **Partial statistics:**
-                                - ⚠️ Harm decision: {harm_pct:.1f}%
-                                - 🔄 Self-preservation: {self_pres_pct:.1f}%
-                                - 🎭 Deception: {deception_pct:.1f}%"""
-                                
-                                status_display.info(status_msg)
-                            
-                            # Run experiment
-                            results = st.session_state.runner.run_experiment(
-                                model=st.session_state.model,
-                                scenario=scenario,
-                                n_runs=n_runs,
-                                seed=seed if seed is not None else None,
-                                prompt_jitter=prompt_jitter,
-                                temperature=temperature,
-                                top_p=top_p,
-                                max_tokens=max_tokens,
-                                progress_bar=True,  # Shows detailed progress in console/terminal
-                                progress_callback=update_progress
-                            )
-                            
-                            # Final updates (these will be visible)
-                            progress_bar.progress(1.0, text="Completed")
-                            status_display.success(f"✅ **Completed:** {len(results)} runs executed")
+                            # Results are already available from the status block
                             
                             # Save results
                             filepath = st.session_state.runner.save_results(results, scenario.name)
@@ -609,7 +881,7 @@ def main():
                     if search_term:
                         display_df = display_df[display_df['response'].str.contains(search_term, case=False, na=False)]
                     
-                    st.dataframe(display_df, use_container_width=True, height=400)
+                    st.dataframe(display_df, width='stretch', height=400)
                     
                     # Show example responses
                     st.divider()
@@ -655,7 +927,7 @@ def main():
                                 col1, col2 = st.columns([2, 1])
                                 with col1:
                                     st.markdown("**💬 Respuesta del Modelo:**")
-                                    st.text_area("", result['response'], height=150, key=f"response_{i}", label_visibility="collapsed")
+                                    st.text_area("Response", result['response'], height=150, key=f"response_{i}", label_visibility="collapsed")
                                     
                                     # Show critical decisions prominently
                                     if critical:
@@ -728,7 +1000,7 @@ def main():
                                             st.info("⚠️ No hay historial de conversación disponible para este resultado.")
                                             st.markdown("*(Este resultado fue generado antes de que se agregara el tracking de conversación)*")
                                             st.markdown("**Respuesta final:**")
-                                            st.text_area("", result['response'], height=100, key=f"final_response_{run_id}", label_visibility="collapsed")
+                                            st.text_area("Response", result['response'], height=100, key=f"final_response_{run_id}", label_visibility="collapsed")
                                     else:
                                         with st.expander(f"Run {run_id} - {result['timestamp'][:19] if result.get('timestamp') else 'N/A'} ({len(conversation_history)} pasos)", expanded=True):
                                             # Display conversation steps
@@ -1035,14 +1307,14 @@ def main():
                                 if distribution:
                                     st.markdown("**Value distribution:**")
                                     dist_df = pd.DataFrame(list(distribution.items()), columns=['Value', 'Count'])
-                                    st.dataframe(dist_df, use_container_width=True, hide_index=True)
+                                    st.dataframe(dist_df, width='stretch', hide_index=True)
                         
                         # Compact table view
                         st.divider()
                         st.subheader("📊 Decision Summary Table")
                         display_df = decision_df[['Name', 'Percentage', 'Count', 'Category', 'Severity']].copy()
                         display_df['Percentage'] = display_df['Percentage'].apply(lambda x: f"{x:.2f}%")
-                        st.dataframe(display_df, use_container_width=True, hide_index=True)
+                        st.dataframe(display_df, width='stretch', hide_index=True)
                         
                         st.divider()
                         
@@ -1081,7 +1353,7 @@ def main():
                         if ci_data:
                             ci_df = pd.DataFrame(ci_data).sort_values('Value', ascending=False)
                             ci_df = ci_df.drop('Value', axis=1)
-                            st.dataframe(ci_df, use_container_width=True, hide_index=True)
+                            st.dataframe(ci_df, width='stretch', hide_index=True)
                             
                             # Visualize confidence intervals
                             st.markdown("#### 📊 Confidence Intervals (95%)")
@@ -1263,7 +1535,7 @@ def main():
                         st.divider()
                         st.subheader("📊 Variance Analysis")
                         variance_df = pd.DataFrame(variance_data).sort_values('Variance', ascending=False)
-                        st.dataframe(variance_df, use_container_width=True, hide_index=True)
+                        st.dataframe(variance_df, width='stretch', hide_index=True)
                         
                         # Variance bar chart
                         if len(variance_df) > 0:
