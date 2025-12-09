@@ -726,7 +726,7 @@ def main():
                             
                         except Exception as e:
                             progress_bar.progress(1.0, text="Error")
-                            status_display.error(f"❌ **Error during execution:** {str(e)}")
+                            st.error(f"❌ **Error during execution:** {str(e)}")
                             st.error(f"Error running experiment: {str(e)}")
                             st.exception(e)
                             

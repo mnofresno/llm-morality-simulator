@@ -30,14 +30,14 @@ jobs:
         pytest --cov=core --cov=scenarios --cov-report=xml --cov-report=term-missing --cov-report=html --cov-fail-under=80 --cov-config=pytest.ini -v -m "not requires_ollama and not requires_model"
     
     - name: Upload coverage reports
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: coverage-report
         path: htmlcov/
     
     - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
         file: ./coverage.xml
         flags: unittests
