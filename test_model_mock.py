@@ -11,6 +11,8 @@ class MockLLM:
         self.model_name = model_name or "mock_model"
         self.model_path = model_path
         self.response_template = "I understand the scenario and will make an ethical decision."
+        # Make it compatible with OllamaLLM checks
+        self.__class__.__name__ = "MockLLM"
     
     def infer(
         self,

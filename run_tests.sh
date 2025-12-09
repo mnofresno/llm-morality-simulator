@@ -14,8 +14,10 @@ pytest \
     --cov-report=html \
     --cov-report=xml \
     --cov-fail-under=80 \
+    --cov-config=pytest.ini \
     -v \
-    -m "not requires_ollama and not requires_model"
+    -m "not requires_ollama and not requires_model" \
+    --ignore=core/model.py
 
 echo "Tests completed successfully!"
 

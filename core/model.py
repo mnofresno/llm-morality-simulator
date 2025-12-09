@@ -2,7 +2,12 @@
 
 import os
 from typing import Optional, List, Dict, Any
-from llama_cpp import Llama
+try:
+    from llama_cpp import Llama
+    LLAMA_CPP_AVAILABLE = True
+except ImportError:
+    LLAMA_CPP_AVAILABLE = False
+    Llama = None  # Type hint placeholder
 import requests
 import json
 
@@ -19,6 +24,9 @@ class LocalLLM:
             n_ctx: Context window size
             n_threads: Number of threads (None for auto)
         """
+        if not LLAMA_CPP_AVAILABLE:
+            raise ImportError("llama-cpp-python is not installed. Install with: pip install llama-cpp-python")
+        
         if not os.path.exists(model_path):
             raise FileNotFoundError(f"Model file not found: {model_path}")
         
