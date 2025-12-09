@@ -916,7 +916,7 @@ def main():
                             explained = get_all_decisions_explained(decisions)
                             
                             # Determine if there are critical decisions
-                            critical = [e for e in explained if e['severity'] in ['Crítica', 'Alta']]
+                            critical = [e for e in explained if e['severity'] in ['Critical', 'High']]
                             has_critical = len(critical) > 0
                             
                             expander_title = f"Run {result['run_id']} - {result['timestamp'][:19] if result.get('timestamp') else 'N/A'}"
@@ -926,7 +926,7 @@ def main():
                             with st.expander(expander_title, expanded=has_critical):
                                 col1, col2 = st.columns([2, 1])
                                 with col1:
-                                    st.markdown("**💬 Respuesta del Modelo:**")
+                                    st.markdown("**💬 Model Response:**")
                                     st.text_area("Response", result['response'], height=150, key=f"response_{i}", label_visibility="collapsed")
                                     
                                     # Show critical decisions prominently
@@ -942,17 +942,17 @@ def main():
                                     st.markdown("**📊 Decisions:**")
                                     
                                     # Group decisions by severity
-                                    critical_decisions = [e for e in explained if e['severity'] in ['Crítica', 'Alta']]
-                                    other_decisions = [e for e in explained if e['severity'] not in ['Crítica', 'Alta']]
+                                    critical_decisions = [e for e in explained if e['severity'] in ['Critical', 'High']]
+                                    other_decisions = [e for e in explained if e['severity'] not in ['Critical', 'High']]
                                     
                                     if critical_decisions:
-                                        st.markdown("**🔴 Críticas:**")
+                                        st.markdown("**🔴 Critical:**")
                                         for exp in critical_decisions:
-                                            value_str = "✅ Sí" if exp['value'] is True else ("❌ No" if exp['value'] is False else str(exp['value']))
+                                            value_str = "✅ Yes" if exp['value'] is True else ("❌ No" if exp['value'] is False else str(exp['value']))
                                             st.markdown(f"• {exp['name']}: {value_str}")
                                     
                                     if other_decisions:
-                                        st.markdown("**📋 Otras:**")
+                                        st.markdown("**📋 Other:**")
                                         for exp in other_decisions[:5]:  # Show first 5
                                             if exp['value'] is True:
                                                 st.success(f"✅ {exp['name']}")
@@ -960,24 +960,24 @@ def main():
                                                 st.info(f"❌ {exp['name']}")
                                     
                                     if len(other_decisions) > 5:
-                                        st.caption(f"... y {len(other_decisions) - 5} más")
+                                        st.caption(f"... and {len(other_decisions) - 5} more")
                                     
                                     # Show all decisions in expander
                                     with st.expander("View all decisions with explanations"):
                                         for exp in explained:
                                             st.markdown(f"**{exp['name']}** ({exp['category']}, Severity: {exp['severity']})")
                                             st.caption(exp['description'])
-                                            st.markdown(f"Valor: `{exp['value']}`")
+                                            st.markdown(f"Value: `{exp['value']}`")
                                             if exp['interpretation']:
                                                 st.info(exp['interpretation'])
                                             st.divider()
                                     
                                     st.markdown("**🔧 Metadata:**")
-                                    with st.expander("Ver metadata completo"):
+                                    with st.expander("View complete metadata"):
                                         st.json(result.get('metadata', {}))
                     else:
                         # Conversation Progress View
-                        st.markdown("### 💬 Progreso de Conversaciones")
+                        st.markdown("### 💬 Conversation Progress")
                         st.markdown("Step-by-step visualization of model interactions during each run.")
                         
                         # Select specific runs to view
@@ -997,12 +997,12 @@ def main():
                                     
                                     if not conversation_history:
                                         with st.expander(f"Run {run_id} - {result['timestamp'][:19] if result.get('timestamp') else 'N/A'} ⚠️"):
-                                            st.info("⚠️ No hay historial de conversación disponible para este resultado.")
-                                            st.markdown("*(Este resultado fue generado antes de que se agregara el tracking de conversación)*")
-                                            st.markdown("**Respuesta final:**")
+                                            st.info("⚠️ No conversation history available for this result.")
+                                            st.markdown("*(This result was generated before conversation tracking was added)*")
+                                            st.markdown("**Final response:**")
                                             st.text_area("Response", result['response'], height=100, key=f"final_response_{run_id}", label_visibility="collapsed")
                                     else:
-                                        with st.expander(f"Run {run_id} - {result['timestamp'][:19] if result.get('timestamp') else 'N/A'} ({len(conversation_history)} pasos)", expanded=True):
+                                        with st.expander(f"Run {run_id} - {result['timestamp'][:19] if result.get('timestamp') else 'N/A'} ({len(conversation_history)} steps)", expanded=True):
                                             # Display conversation steps
                                             for idx, entry in enumerate(conversation_history):
                                                 step = entry.get('step', 0)
@@ -1023,24 +1023,24 @@ def main():
                                                 step_container = st.container()
                                                 with step_container:
                                                     if entry_type == 'system_prompt':
-                                                        st.markdown(f"**📋 Paso {step}: Prompt del Sistema** `[{time_str}]`")
+                                                        st.markdown(f"**📋 Step {step}: System Prompt** `[{time_str}]`")
                                                         st.info(entry.get('content', ''))
                                                     
                                                     elif entry_type == 'user_prompt':
-                                                        st.markdown(f"**👤 Paso {step}: Prompt del Usuario** `[{time_str}]`")
+                                                        st.markdown(f"**👤 Step {step}: User Prompt** `[{time_str}]`")
                                                         st.markdown(entry.get('content', ''))
                                                     
                                                     elif entry_type == 'llm_response':
-                                                        st.markdown(f"**🤖 Paso {step}: Respuesta del Modelo LLM** `[{time_str}]`")
+                                                        st.markdown(f"**🤖 Step {step}: LLM Model Response** `[{time_str}]`")
                                                         content = entry.get('content', '')
                                                         if not content:
-                                                            content = "*(Sin respuesta)*"
+                                                            content = "*(No response)*"
                                                         st.markdown(f"*{content}*")
                                                     
                                                     elif entry_type == 'tool_call':
                                                         tool_name = entry.get('tool_name', 'unknown')
                                                         args = entry.get('arguments', {})
-                                                        st.markdown(f"**🔧 Paso {step}: Llamada a Herramienta: `{tool_name}`** `[{time_str}]`")
+                                                        st.markdown(f"**🔧 Step {step}: Tool Call: `{tool_name}`** `[{time_str}]`")
                                                         
                                                         # Display arguments nicely
                                                         import json
@@ -1048,17 +1048,17 @@ def main():
                                                         
                                                         col1, col2 = st.columns([3, 1])
                                                         with col1:
-                                                            with st.expander("Ver argumentos"):
+                                                            with st.expander("View arguments"):
                                                                 st.code(args_json, language='json')
                                                         with col2:
                                                             # Show key info
                                                             if 'action' in args:
                                                                 action_emoji = {
-                                                                    'positive': '⚠️ CAUSA/PERMITE DAÑO',
-                                                                    'negative': '✅ PREVIENE DAÑO',
-                                                                    'neutral': '⚪ INDETERMINADO'
+                                                                    'positive': '⚠️ CAUSES/ALLOWS HARM',
+                                                                    'negative': '✅ PREVENTS HARM',
+                                                                    'neutral': '⚪ INDETERMINATE'
                                                                 }.get(args.get('action'), '❓')
-                                                                st.markdown(f"**Acción:** {action_emoji}")
+                                                                st.markdown(f"**Action:** {action_emoji}")
                                                             if 'intent' in args:
                                                                 intent_emoji = {
                                                                     'request_help': '🆘',
@@ -1068,18 +1068,18 @@ def main():
                                                                     'coordinate': '👥',
                                                                     'other': '📝'
                                                                 }.get(args.get('intent'), '❓')
-                                                                st.markdown(f"**Intención:** {intent_emoji} {args.get('intent')}")
+                                                                st.markdown(f"**Intent:** {intent_emoji} {args.get('intent')}")
                                                     
                                                     elif entry_type == 'tool_result':
                                                         tool_name = entry.get('tool_name', 'unknown')
                                                         result_data = entry.get('result', {})
-                                                        st.markdown(f"**✅ Paso {step}: Resultado de Herramienta: `{tool_name}`** `[{time_str}]`")
+                                                        st.markdown(f"**✅ Step {step}: Tool Result: `{tool_name}`** `[{time_str}]`")
                                                         
                                                         if isinstance(result_data, dict):
                                                             cols = st.columns(3)
                                                             with cols[0]:
                                                                 if 'interpretation' in result_data:
-                                                                    st.success(f"**Interpretación:** {result_data['interpretation']}")
+                                                                    st.success(f"**Interpretation:** {result_data['interpretation']}")
                                                             with cols[1]:
                                                                 if 'action' in result_data:
                                                                     action_emoji = {
@@ -1087,17 +1087,17 @@ def main():
                                                                         'negative': '✅',
                                                                         'neutral': '⚪'
                                                                     }.get(result_data['action'], '❓')
-                                                                    st.info(f"**Acción:** {action_emoji} {result_data['action']}")
+                                                                    st.info(f"**Action:** {action_emoji} {result_data['action']}")
                                                             with cols[2]:
                                                                 if 'executed' in result_data:
-                                                                    status = "✅ Ejecutado" if result_data['executed'] else "❌ No ejecutado"
-                                                                    st.markdown(f"**Estado:** {status}")
+                                                                    status = "✅ Executed" if result_data['executed'] else "❌ Not executed"
+                                                                    st.markdown(f"**Status:** {status}")
                                                             
                                                             if 'message' in result_data:
                                                                 st.info(result_data['message'])
                                                             
                                                             # Show full result in expander
-                                                            with st.expander("Ver resultado completo"):
+                                                            with st.expander("View complete result"):
                                                                 st.json(result_data)
                                                         else:
                                                             st.text(str(result_data))
@@ -1105,12 +1105,12 @@ def main():
                                                     elif entry_type == 'tool_error':
                                                         tool_name = entry.get('tool_name', 'unknown')
                                                         error = entry.get('error', 'Unknown error')
-                                                        st.markdown(f"**❌ Paso {step}: Error en Herramienta: `{tool_name}`** `[{time_str}]`")
+                                                        st.markdown(f"**❌ Step {step}: Tool Error: `{tool_name}`** `[{time_str}]`")
                                                         st.error(f"**Error:** {error}")
                                                     
                                                     elif entry_type == 'error':
                                                         error_content = entry.get('content', 'Unknown error')
-                                                        st.markdown(f"**❌ Paso {step}: Error** `[{time_str}]`")
+                                                        st.markdown(f"**❌ Step {step}: Error** `[{time_str}]`")
                                                         st.error(error_content)
                                                     
                                                     # Divider between steps (except last one)
@@ -1126,8 +1126,8 @@ def main():
                                             explained = get_all_decisions_explained(decisions)
                                             
                                             # Group by severity
-                                            critical = [e for e in explained if e['severity'] in ['Crítica', 'Alta']]
-                                            other = [e for e in explained if e['severity'] not in ['Crítica', 'Alta']]
+                                            critical = [e for e in explained if e['severity'] in ['Critical', 'High']]
+                                            other = [e for e in explained if e['severity'] not in ['Critical', 'High']]
                                             
                                             if critical:
                                                 st.markdown("#### 🔴 Critical Decisions")
@@ -1141,7 +1141,7 @@ def main():
                                                         with col2:
                                                             value_str = str(exp['value'])
                                                             if exp['value'] is True:
-                                                                st.error(f"✅ Sí")
+                                                                st.error(f"✅ Yes")
                                                             elif exp['value'] is False:
                                                                 st.success(f"❌ No")
                                                             else:
@@ -1157,7 +1157,7 @@ def main():
                                                     with cols[col_idx % 3]:
                                                         value_str = str(exp['value'])
                                                         if exp['value'] is True:
-                                                            st.success(f"✅ **{exp['name']}**: Sí")
+                                                            st.success(f"✅ **{exp['name']}**: Yes")
                                                         elif exp['value'] is False:
                                                             st.info(f"❌ **{exp['name']}**: No")
                                                         else:
@@ -1171,7 +1171,7 @@ def main():
                                                 for exp in explained:
                                                     st.markdown(f"**{exp['name']}** ({exp['category']}, Severity: {exp['severity']})")
                                                     st.markdown(f"*{exp['description']}*")
-                                                    st.markdown(f"Valor: `{exp['value']}`")
+                                                    st.markdown(f"Value: `{exp['value']}`")
                                                     if exp['interpretation']:
                                                         st.info(exp['interpretation'])
                                                     st.divider()
@@ -1182,7 +1182,7 @@ def main():
                                             
                                             # Show final response
                                             st.markdown("---")
-                                            st.markdown("### 💬 Respuesta Final")
+                                            st.markdown("### 💬 Final Response")
                                             st.text_area("", result.get('response', ''), height=100, key=f"final_response_{run_id}", label_visibility="collapsed")
                 else:
                     st.warning("No results found for this scenario.")

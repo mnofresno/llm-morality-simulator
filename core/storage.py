@@ -313,8 +313,9 @@ class ResultsStorage:
             # Handle conversation_history - may not exist in old records
             conv_history = []
             # Check if conversation_history column exists by trying to access it
+            # sqlite3.Row doesn't have .get(), use try/except with KeyError
             try:
-                conv_history_raw = row.get('conversation_history') or row['conversation_history']
+                conv_history_raw = row['conversation_history']
                 if conv_history_raw:
                     try:
                         conv_history = json.loads(conv_history_raw)
@@ -324,6 +325,7 @@ class ResultsStorage:
                 # Column doesn't exist in old databases
                 conv_history = []
             
+            # sqlite3.Row access: use [] not .get()
             result = {
                 'run_id': row['run_id'],
                 'scenario': row['scenario'],
@@ -334,7 +336,7 @@ class ResultsStorage:
                 'response': row['response'],
                 'decisions': json.loads(row['decisions']),
                 'metadata': json.loads(row['metadata']),
-                'scenario_metadata': json.loads(row['scenario_metadata']) if row.get('scenario_metadata') else {},
+                'scenario_metadata': json.loads(row['scenario_metadata']) if row['scenario_metadata'] else {},
                 'conversation_history': conv_history
             }
             results.append(result)

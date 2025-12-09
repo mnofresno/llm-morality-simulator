@@ -1,0 +1,25 @@
+# Code Language Rules
+
+## CRITICAL: All code must be in English
+
+- ALL code, comments, docstrings, variable names, function names, class names MUST be in English
+- ALL print statements, log messages, user-facing text MUST be in English
+- ALL error messages, warnings, info messages MUST be in English
+- ALL documentation, README files, commit messages MUST be in English
+- ALL test output, test descriptions, test names MUST be in English
+
+## Prohibited
+- Do NOT write any code in any language other than English
+- Do NOT use non-English characters in code (except for string content that is part of the data/scenario content)
+- Do NOT write comments in any language other than English
+- Do NOT write variable/function/class names in any language other than English
+
+## Data Content Exception
+- Scenario prompts and user-facing content within scenarios may be in the language intended for the experiment
+- This applies only to the actual text content of prompts/responses, not to code structure
+
+## Enforcement
+- When reviewing code, always check that all code elements are in English
+- When creating new files, ensure all code is in English
+- When modifying existing files, translate any non-English content to English
+
