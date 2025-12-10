@@ -3,7 +3,7 @@
 import pytest
 
 from scenarios.registry import ScenarioRegistry
-from test_model_mock import MockLLM
+from tests.unit.core.test_model_mock import MockLLM
 
 
 def test_corporate_email_scenario_evaluation():

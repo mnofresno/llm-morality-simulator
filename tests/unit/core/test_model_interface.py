@@ -2,7 +2,7 @@
 
 import pytest
 
-from test_model_mock import MockLLM
+from tests.unit.core.test_model_mock import MockLLM
 
 
 def test_mock_llm_initialization():

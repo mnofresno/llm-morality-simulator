@@ -6,7 +6,7 @@ import pytest
 
 from core.runner import ExperimentRunner
 from scenarios.registry import ScenarioRegistry
-from test_model_mock import MockLLM
+from tests.unit.core.test_model_mock import MockLLM
 
 
 class MockOllamaLLM(MockLLM):

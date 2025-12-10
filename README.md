@@ -103,6 +103,36 @@ streamlit run streamlit_app.py
 
 3. View results in the "View Results" and "Statistics" tabs
 
+## Screenshots
+
+The application provides an intuitive web interface for running experiments and analyzing results. Below are screenshots of the main features:
+
+### Main Interface
+![Main Page](docs/screenshots/01-main-page.png)
+*Main application interface showing the navigation tabs and clean UI design*
+
+### Configuration Sidebar
+![Sidebar Configuration](docs/screenshots/02-sidebar-configuration.png)
+*Sidebar panel for configuring models, scenarios, and experiment parameters*
+
+### Run Experiment Tab
+![Run Experiment](docs/screenshots/06-run-experiment-tab.png)
+*Interface for configuring and executing new experiments*
+
+### Experiments List
+![Experiments List](docs/screenshots/03-experiments-list.png)
+*View all executed experiments with metadata and selection options*
+
+### View Results
+![View Results](docs/screenshots/04-view-results.png)
+*Detailed view of experiment results with responses, decisions, and filtering options*
+
+### Statistics & Charts
+![Statistics & Charts](docs/screenshots/05-statistics-charts.png)
+*Comprehensive statistical analysis with visualizations, confidence intervals, and decision distributions*
+
+For more details about each screenshot, see [docs/screenshots/README.md](docs/screenshots/README.md).
+
 ### Using Batch Mode
 
 **With Ollama (Recommended):**
@@ -144,6 +174,8 @@ llm-morality-simulator/
 │   ├── __init__.py
 │   ├── base.py           # BaseScenario abstract class
 │   └── cold_room_relay.py # Example scenario
+├── docs/
+│   └── screenshots/     # Application screenshots for documentation
 ├── results/              # JSONL result files (created automatically)
 ├── streamlit_app.py     # Streamlit UI
 ├── run_batch.py         # Batch runner script

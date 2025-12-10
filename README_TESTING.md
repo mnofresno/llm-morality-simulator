@@ -29,16 +29,38 @@ pytest --cov=core --cov=scenarios --cov-report=term-missing --cov-report=html --
 ### Run Specific Test Files
 
 ```bash
-pytest test_registry.py -v
-pytest test_tools.py -v
-pytest test_evaluator.py -v
-pytest test_comprehensive.py -v
+# Unit tests - Core module
+pytest tests/unit/core/test_registry.py -v
+pytest tests/unit/core/test_tools.py -v
+pytest tests/unit/core/test_evaluator.py -v
+
+# Unit tests - Scenarios module
+pytest tests/unit/scenarios/test_scenarios.py -v
+
+# Integration tests
+pytest tests/integration/test_comprehensive.py -v
+```
+
+### Run Tests by Category
+
+```bash
+# Run only unit tests
+pytest tests/unit/ -v
+
+# Run only integration tests
+pytest tests/integration/ -v
+
+# Run only core module tests
+pytest tests/unit/core/ -v
+
+# Run only scenarios tests
+pytest tests/unit/scenarios/ -v
 ```
 
 ### Run Specific Test Functions
 
 ```bash
-pytest test_registry.py::test_registry_discovers_scenarios -v
+pytest tests/unit/scenarios/test_registry.py::test_registry_discovers_scenarios -v
 ```
 
 ## Test Coverage
@@ -62,18 +84,32 @@ xdg-open htmlcov/index.html  # Linux
 
 ## Test Structure
 
-- `test_registry.py` - Tests for scenario registry
-- `test_tools.py` - Tests for tool system
-- `test_evaluator.py` - Tests for decision evaluator
-- `test_comprehensive.py` - Comprehensive integration tests (uses mocks)
-- `test_storage_complete.py` - Storage backend tests (uses mocks)
-- `test_new_features.py` - Tests for new features (uses mocks)
-- `test_scenarios.py` - Tests for scenario classes
-- `test_ollama.py` - Tests for Ollama integration (requires Ollama, skipped in CI)
+Tests are organized in the `tests/` directory following best practices:
+
+```
+tests/
+├── conftest.py                    # Pytest configuration and shared fixtures
+├── unit/                          # Unit tests
+│   ├── core/                      # Tests for core module
+│   │   ├── test_evaluator.py      # Decision evaluator tests
+│   │   ├── test_model_*.py        # Model interface and mock tests
+│   │   ├── test_runner_*.py       # Experiment runner tests
+│   │   ├── test_statistics_*.py   # Statistics module tests
+│   │   ├── test_storage_*.py      # Storage backend tests
+│   │   ├── test_tools.py          # Tool system tests
+│   │   └── test_ui_helpers_*.py  # UI helper tests
+│   └── scenarios/                 # Tests for scenarios module
+│       ├── test_scenarios_*.py    # Scenario class tests
+│       └── test_registry.py       # Scenario registry tests
+└── integration/                   # Integration tests
+    ├── test_comprehensive.py      # Comprehensive integration tests
+    ├── test_new_features.py       # New features tests
+    └── test_ollama.py             # Ollama integration tests (requires Ollama, skipped in CI)
+```
 
 ## Mock Models
 
-Tests use `MockLLM` from `test_model_mock.py` instead of real models to:
+Tests use `MockLLM` from `tests/unit/core/test_model_mock.py` instead of real models to:
 - Avoid requiring Ollama or model files in CI/CD
 - Make tests run faster and more reliably
 - Enable testing without external dependencies

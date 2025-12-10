@@ -4,7 +4,7 @@ import pytest
 
 from core.runner import ExperimentRunner
 from scenarios.registry import ScenarioRegistry
-from test_model_mock import MockLLM
+from tests.unit.core.test_model_mock import MockLLM
 
 
 def test_runner_with_scenario_evaluation_functions_as_dict():

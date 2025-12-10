@@ -3,8 +3,9 @@
 import sys
 from pathlib import Path
 
-# Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add project root directory to path
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
 
 from core.decision_explanations import (
     DECISION_EXPLANATIONS,
@@ -16,7 +17,7 @@ from core.runner import ExperimentRunner
 from core.statistics import ExperimentStatistics
 from core.storage import ResultsStorage, StorageBackend
 from scenarios.registry import ScenarioRegistry
-from test_model_mock import MockLLM
+from tests.unit.core.test_model_mock import MockLLM
 
 
 def test_decision_explanations():
