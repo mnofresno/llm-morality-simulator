@@ -45,3 +45,5 @@ Thumbs.db
 *.db
 *.duckdb
 *.jsonl
+.coverage
+coverage.xml
