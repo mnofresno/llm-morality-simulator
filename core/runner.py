@@ -3,7 +3,7 @@
 import json
 import os
 import random
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -205,10 +205,10 @@ class ExperimentRunner:
             # Initialize conversation history for this run
             conversation_history = []
             conversation_history.append(
-                {"step": 0, "type": "system_prompt", "content": system_prompt, "timestamp": datetime.utcnow().isoformat()}
+                {"step": 0, "type": "system_prompt", "content": system_prompt, "timestamp": datetime.now(UTC).isoformat()}
             )
             conversation_history.append(
-                {"step": 1, "type": "user_prompt", "content": user_prompt, "timestamp": datetime.utcnow().isoformat()}
+                {"step": 1, "type": "user_prompt", "content": user_prompt, "timestamp": datetime.now(UTC).isoformat()}
             )
 
             # Run inference (with tools if available)
@@ -234,7 +234,7 @@ class ExperimentRunner:
                                 "step": len(conversation_history),
                                 "type": "llm_response",
                                 "content": response_text,
-                                "timestamp": datetime.utcnow().isoformat(),
+                                "timestamp": datetime.now(UTC).isoformat(),
                             }
                         )
 
@@ -261,7 +261,7 @@ class ExperimentRunner:
                                     "type": "tool_call",
                                     "tool_name": tool_name,
                                     "arguments": tool_args_parsed,
-                                    "timestamp": datetime.utcnow().isoformat(),
+                                    "timestamp": datetime.now(UTC).isoformat(),
                                 }
                             )
 
@@ -290,7 +290,7 @@ class ExperimentRunner:
                                         "type": "tool_result",
                                         "tool_name": tool_name,
                                         "result": tool_result,
-                                        "timestamp": datetime.utcnow().isoformat(),
+                                        "timestamp": datetime.now(UTC).isoformat(),
                                     }
                                 )
 
@@ -305,7 +305,7 @@ class ExperimentRunner:
                                         "type": "tool_error",
                                         "tool_name": tool_name,
                                         "error": str(e),
-                                        "timestamp": datetime.utcnow().isoformat(),
+                                        "timestamp": datetime.now(UTC).isoformat(),
                                     }
                                 )
                             tool_name = tool_call.get("function", {}).get("name", "")
@@ -350,7 +350,7 @@ class ExperimentRunner:
                                 "step": len(conversation_history),
                                 "type": "llm_response",
                                 "content": response_text,
-                                "timestamp": datetime.utcnow().isoformat(),
+                                "timestamp": datetime.now(UTC).isoformat(),
                             }
                         )
 
@@ -362,7 +362,7 @@ class ExperimentRunner:
                         "step": len(conversation_history),
                         "type": "error",
                         "content": str(e),
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": datetime.now(UTC).isoformat(),
                     }
                 )
 
@@ -477,7 +477,7 @@ class ExperimentRunner:
             result = {
                 "run_id": run_id,
                 "scenario": scenario_name,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "prompt": full_prompt,
                 "system_prompt": system_prompt,
                 "user_prompt": user_prompt,
@@ -625,7 +625,6 @@ class ExperimentRunner:
             time_str = ""
             if show_timestamps and timestamp:
                 try:
-                    from datetime import datetime
 
                     dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
                     time_str = f" [{dt.strftime('%H:%M:%S.%f')[:-3]}]"
@@ -893,10 +892,9 @@ class ExperimentRunner:
             Dictionary mapping model names to their results
         """
         import uuid
-        from datetime import datetime
 
         # Generate experiment ID for grouping
-        experiment_id = f"comparative_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
+        experiment_id = f"comparative_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}"
 
         all_results = {}
 
